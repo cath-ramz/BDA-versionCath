@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_facturas_pagos %}
+
+{% block title %}Pagos - Panel de Ventas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_pagos.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Gestión de Pagos</h1>
+        <p class="dashboard-subtitle">Registrar pagos de facturas pendientes</p>
+    </div>
+</div>
+
+<div class="container">
+    {% if facturas_pendientes %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Facturas Pendientes de Pago</h5>
+        </div>
+        <div class="card-body">
+            {{ tabla_facturas_pagos(facturas_pendientes) }}
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center">
+            <i class="bi bi-check-circle" style="font-size: 3rem; color: #10b981; margin-bottom: 16px;"></i>
+            <h5>No hay facturas pendientes</h5>
+            <p class="text-muted">Todas las facturas están pagadas.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para Registrar Pago -->
+<div class="modal fade" id="modalPago" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Pago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPago">
+                    <input type="hidden" id="pagoIdFactura" name="id_factura">
+
+                    <div class="mb-3">
+                        <label class="form-label">Factura #<span id="pagoNumFactura"></span></label>
+                        <div class="alert alert-info mb-0">
+                            <strong>Pendiente:</strong> $<span id="pagoPendiente">0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="pagoImporte" class="form-label">Importe a Pagar *</label>
+                        <input type="number" class="form-control" id="pagoImporte" name="importe" step="0.01" min="0.01"
+                            required>
+                        <small class="text-muted">Ingrese el monto a registrar</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="pagoMetodo" class="form-label">Método de Pago *</label>
+                        <select class="form-select" id="pagoMetodo" name="id_metodo_pago" required>
+                            <option value="">Seleccione un método...</option>
+                            {% for metodo in metodos_pago %}
+                            <option value="{{ metodo.id_metodo_pago }}">{{ metodo.nombre_metodo_pago }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnRegistrarPago">
+                    <i class="bi bi-credit-card"></i> Registrar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ventas_pagos.js') }}"></script>
+{% endblock %}

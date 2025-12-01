@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - Panel de Finanzas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+<style>
+    .reportes-container {
+        padding: 2rem 0;
+    }
+    
+    .report-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .report-section h2 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3498db;
+    }
+    
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .kpi-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .kpi-box.ingresos {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    
+    .kpi-box.facturas {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .kpi-box.pagadas {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    
+    .kpi-box.pendientes {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .kpi-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-subtitle {
+        font-size: 0.8rem;
+        opacity: 0.8;
+    }
+    
+    .chart-container {
+        min-height: 400px;
+        margin-bottom: 2rem;
+    }
+    
+    .table-report {
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-graph-up"></i> Reportes Financieros
+        </h1>
+        <p class="text-muted">Análisis financiero y estadísticas de facturación</p>
+    </div>
+</div>
+
+<div class="container-fluid reportes-container">
+    <!-- KPIs Resumen Financiero -->
+    <div class="report-section">
+        <h2><i class="bi bi-speedometer2"></i> Resumen Financiero</h2>
+        <div id="mensajeSinDatos" class="alert alert-info" style="display: none;">
+            <i class="bi bi-info-circle"></i> 
+            <strong>No hay facturas registradas:</strong> Los valores se mostrarán cuando existan facturas en el sistema. 
+            Las facturas se crean automáticamente al procesar pedidos.
+        </div>
+        <div class="kpi-grid" id="kpiResumen">
+            <div class="kpi-box ingresos">
+                <div class="kpi-label">Ingresos Totales</div>
+                <div class="kpi-value" id="kpiIngresosTotales">$0</div>
+                <div class="kpi-subtitle">Facturación total</div>
+            </div>
+            <div class="kpi-box facturas">
+                <div class="kpi-label">Total Facturas</div>
+                <div class="kpi-value" id="kpiTotalFacturas">0</div>
+                <div class="kpi-subtitle">Facturas emitidas</div>
+            </div>
+            <div class="kpi-box pagadas">
+                <div class="kpi-label">Facturas Pagadas</div>
+                <div class="kpi-value" id="kpiFacturasPagadas">0</div>
+                <div class="kpi-subtitle">Completamente pagadas</div>
+            </div>
+            <div class="kpi-box pendientes">
+                <div class="kpi-label">Pendiente por Cobrar</div>
+                <div class="kpi-value" id="kpiPendienteCobrar">$0</div>
+                <div class="kpi-subtitle">Monto pendiente</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Facturación por Año -->
+    <div class="report-section">
+        <h2><i class="bi bi-calendar-year"></i> Análisis de Facturación por Año</h2>
+        <div id="chartFacturacionAnio" class="chart-container"></div>
+    </div>
+
+    <!-- Estado de Pagos -->
+    <div class="report-section">
+        <h2><i class="bi bi-pie-chart"></i> Estado de Pagos</h2>
+        <div id="chartEstadoPagos" class="chart-container"></div>
+    </div>
+
+    <!-- Pagos por Método -->
+    <div class="report-section">
+        <h2><i class="bi bi-credit-card"></i> Análisis de Pagos por Método</h2>
+        <div id="chartPagosMetodo" class="chart-container"></div>
+    </div>
+
+    <!-- Top Clientes por Facturación -->
+    <div class="report-section">
+        <h2><i class="bi bi-trophy"></i> Top 10 Clientes por Facturación</h2>
+        <div id="chartTopClientes" class="chart-container"></div>
+    </div>
+
+    <!-- Facturación Mensual (Últimos 12 meses) -->
+    <div class="report-section">
+        <h2><i class="bi bi-calendar-month"></i> Facturación Mensual (Últimos 12 Meses)</h2>
+        <div id="chartFacturacionMensual" class="chart-container"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="{{ url_for('static', filename='js/finanzas_reportes.js') }}"></script>
+{% endblock %}

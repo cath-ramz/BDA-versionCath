@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_pedidos %}
+
+{% block title %}Pedidos - Panel de Ventas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_pedidos.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-cart"></i> Gestión de Pedidos
+                </h1>
+                <p class="text-muted">Administración y seguimiento de pedidos</p>
+            </div>
+            <a href="{{ url_for('ventas_crear_pedido') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Nuevo Pedido
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="table-container">
+        {{ tabla_pedidos(pedidos) }}
+    </div>
+</div>
+
+<!-- Modal para Cancelar Pedido -->
+<div class="modal fade" id="modalCancelarPedido" tabindex="-1" aria-labelledby="modalCancelarPedidoLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCancelarPedidoLabel">
+                    <i class="bi bi-x-circle"></i> Cancelar Pedido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertCancelarContainer"></div>
+                <form id="formCancelarPedido">
+                    <input type="hidden" id="cancelarIdPedido" name="id_pedido">
+
+                    <div class="mb-3">
+                        <label class="form-label">ID Pedido</label>
+                        <input type="text" class="form-control" id="cancelarIdPedidoDisplay" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Motivo de Cancelación <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="cancelarMotivo" name="motivo_cancelacion" rows="4"
+                            maxlength="200" required placeholder="Describa el motivo de la cancelación..."></textarea>
+                        <small class="text-muted">Máximo 200 caracteres</small>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Advertencia:</strong> Al cancelar el pedido, el stock de los productos será devuelto
+                        automáticamente al inventario.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarCancelar">
+                    <i class="bi bi-x-circle"></i> Confirmar Cancelación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Cambiar Estado del Pedido -->
+<div class="modal fade" id="modalCambiarEstado" tabindex="-1" aria-labelledby="modalCambiarEstadoLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCambiarEstadoLabel">
+                    <i class="bi bi-arrow-repeat"></i> Cambiar Estado del Pedido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertCambiarEstadoContainer"></div>
+                <form id="formCambiarEstado">
+                    <input type="hidden" id="cambiarEstadoIdPedido" name="id_pedido">
+
+                    <div class="mb-3">
+                        <label class="form-label">ID Pedido</label>
+                        <input type="text" class="form-control" id="cambiarEstadoIdPedidoDisplay" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Estado Actual</label>
+                        <div id="cambiarEstadoActualBadge" class="mb-2">
+                            <!-- Se llenará dinámicamente con el badge -->
+                        </div>
+                        <input type="hidden" id="cambiarEstadoActual" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nuevo Estado <span class="text-danger">*</span></label>
+                        <select class="form-select" id="cambiarEstadoNuevo" name="estado_pedido" required>
+                            <option value="">Seleccione un estado...</option>
+                        </select>
+                        <small class="text-muted" id="mensajeEstadosDisponibles">
+                            Cargando estados disponibles...
+                        </small>
+                    </div>
+
+                    <div class="alert alert-info" id="infoFlujoEstados" style="display: none;">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Flujo de estados:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Confirmado → Procesado</li>
+                            <li>Procesado → Completado o Cancelado</li>
+                            <li>Completado/Cancelado → No se pueden cambiar (estados finales)</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarCambiarEstado">
+                    <i class="bi bi-check-circle"></i> Cambiar Estado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ventas_pedidos.js') }}"></script>
+{% endblock %}

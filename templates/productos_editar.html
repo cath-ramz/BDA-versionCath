@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Producto - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/productos_editar.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-pencil"></i> Editar Producto
+        </h1>
+        <p class="page-subtitle">Modifique los campos que desee actualizar</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-container">
+        <form id="formEditarProducto">
+            <!-- Información Básica -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-info-circle"></i> Información Básica
+                </h3>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="sku" class="form-label">SKU (No modificable)</label>
+                        <input type="text" class="form-control sku-readonly" id="sku" name="sku"
+                            value="{{ producto.sku }}" readonly>
+                        <small class="form-text text-muted">El SKU no se puede modificar</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="nombre_producto" class="form-label">Nombre del Producto</label>
+                        <input type="text" class="form-control" id="nombre_producto" name="nombre_producto"
+                            value="{{ producto.nombre_producto }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="categoria" class="form-label">Categoría</label>
+                        <select class="form-select" id="categoria" name="categoria">
+                            <option value="">No cambiar</option>
+                            {% if categorias %}
+                            {% for categoria in categorias %}
+                            <option value="{{ categoria.nombre_categoria }}" {% if
+                                producto.nombre_categoria==categoria.nombre_categoria %}selected{% endif %}>
+                                {{ categoria.nombre_categoria }}
+                            </option>
+                            {% endfor %}
+                            {% else %}
+                            <!-- Fallback si no hay categorías cargadas -->
+                            <option value="Anillos" {% if producto.nombre_categoria=='Anillos' %}selected{% endif %}>
+                                Anillos</option>
+                            <option value="Collares" {% if producto.nombre_categoria=='Collares' %}selected{% endif %}>
+                                Collares</option>
+                            <option value="Pulseras" {% if producto.nombre_categoria=='Pulseras' %}selected{% endif %}>
+                                Pulseras</option>
+                            <option value="Aretes" {% if producto.nombre_categoria=='Aretes' %}selected{% endif %}>
+                                Aretes</option>
+                            <option value="Relojes" {% if producto.nombre_categoria=='Relojes' %}selected{% endif %}>
+                                Relojes</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="precio_unitario" class="form-label">Precio Unitario</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="precio_unitario" name="precio_unitario"
+                                step="0.01" min="0" value="{{ producto.precio_unitario }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalles del Producto -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-card-text"></i> Detalles del Producto
+                </h3>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="costo_unitario" class="form-label">Costo Unitario</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="costo_unitario" name="costo_unitario"
+                                step="0.01" min="0" value="{{ producto.costo_unitario }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="descuento_producto" class="form-label">Descuento (%)</label>
+                        <input type="number" class="form-control" id="descuento_producto" name="descuento_producto"
+                            min="0" max="100" value="{{ producto.descuento_producto or 0 }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="material" class="form-label">Material</label>
+                        <select class="form-select" id="material" name="material">
+                            <option value="">No cambiar</option>
+                            {% if materiales %}
+                            {% for material_item in materiales %}
+                            <option value="{{ material_item.material }}" {% if producto.material==material_item.material
+                                %}selected{% endif %}>
+                                {{ material_item.material }}
+                            </option>
+                            {% endfor %}
+                            {% else %}
+                            <option value="Oro" {% if producto.material=='Oro' %}selected{% endif %}>Oro</option>
+                            <option value="Plata" {% if producto.material=='Plata' %}selected{% endif %}>Plata</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="genero_producto" class="form-label">Género</label>
+                        <select class="form-select" id="genero_producto" name="genero_producto">
+                            <option value="">No cambiar</option>
+                            {% if generos_productos %}
+                            {% for genero_item in generos_productos %}
+                            <option value="{{ genero_item.genero_producto }}" {% if
+                                producto.genero_producto==genero_item.genero_producto %}selected{% endif %}>
+                                {{ genero_item.genero_producto }}
+                            </option>
+                            {% endfor %}
+                            {% else %}
+                            <option value="Mujer" {% if producto.genero_producto=='Mujer' %}selected{% endif %}>Mujer
+                            </option>
+                            <option value="Hombre" {% if producto.genero_producto=='Hombre' %}selected{% endif %}>Hombre
+                            </option>
+                            <option value="Unisex" {% if producto.genero_producto=='Unisex' %}selected{% endif %}>Unisex
+                            </option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-4" id="talla-container"
+                        style="display: {% if producto.nombre_categoria == 'Anillos' %}block{% else %}none{% endif %};">
+                        <label for="talla" class="form-label">Talla (Solo Anillos)</label>
+                        <select class="form-select" id="talla" name="talla">
+                            <option value="">No cambiar</option>
+                            {% if tallas %}
+                                {% for talla_item in tallas %}
+                                    <option value="{{ talla_item.talla }}" {% if producto.talla and (producto.talla|string == talla_item.talla|string) %}selected{% endif %}>
+                                        {{ talla_item.talla }}
+                                    </option>
+                                {% endfor %}
+                            {% else %}
+                                {# Fallback con valores del ENUM según create_tables.sql líneas 232-233 #}
+                                <option value="4" {% if producto.talla and (producto.talla|string == '4') %}selected{% endif %}>4</option>
+                                <option value="4,5" {% if producto.talla and (producto.talla|string == '4,5') %}selected{% endif %}>4,5</option>
+                                <option value="5" {% if producto.talla and (producto.talla|string == '5') %}selected{% endif %}>5</option>
+                                <option value="5,5" {% if producto.talla and (producto.talla|string == '5,5') %}selected{% endif %}>5,5</option>
+                                <option value="6" {% if producto.talla and (producto.talla|string == '6') %}selected{% endif %}>6</option>
+                                <option value="6,5" {% if producto.talla and (producto.talla|string == '6,5') %}selected{% endif %}>6,5</option>
+                                <option value="7" {% if producto.talla and (producto.talla|string == '7') %}selected{% endif %}>7</option>
+                                <option value="7,5" {% if producto.talla and (producto.talla|string == '7,5') %}selected{% endif %}>7,5</option>
+                                <option value="8" {% if producto.talla and (producto.talla|string == '8') %}selected{% endif %}>8</option>
+                                <option value="8,5" {% if producto.talla and (producto.talla|string == '8,5') %}selected{% endif %}>8,5</option>
+                                <option value="9" {% if producto.talla and (producto.talla|string == '9') %}selected{% endif %}>9</option>
+                                <option value="9,5" {% if producto.talla and (producto.talla|string == '9,5') %}selected{% endif %}>9,5</option>
+                                <option value="10" {% if producto.talla and (producto.talla|string == '10') %}selected{% endif %}>10</option>
+                                <option value="10,5" {% if producto.talla and (producto.talla|string == '10,5') %}selected{% endif %}>10,5</option>
+                                <option value="11" {% if producto.talla and (producto.talla|string == '11') %}selected{% endif %}>11</option>
+                                <option value="11,5" {% if producto.talla and (producto.talla|string == '11,5') %}selected{% endif %}>11,5</option>
+                                <option value="12" {% if producto.talla and (producto.talla|string == '12') %}selected{% endif %}>12</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campos específicos por material -->
+                <div class="row mb-3" id="oroFields"
+                    style="display: {% if producto.material == 'Oro' %}block{% else %}none{% endif %};">
+                    <div class="col-md-6">
+                        <label for="kilataje" class="form-label">Kilataje (Solo Oro)</label>
+                        <select class="form-select" id="kilataje" name="kilataje">
+                            <option value="">No cambiar</option>
+                            <option value="10K" {% if producto.kilataje=='10K' %}selected{% endif %}>10K</option>
+                            <option value="14K" {% if producto.kilataje=='14K' %}selected{% endif %}>14K</option>
+                            <option value="18K" {% if producto.kilataje=='18K' %}selected{% endif %}>18K</option>
+                            <option value="24K" {% if producto.kilataje=='24K' %}selected{% endif %}>24K</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3" id="plataFields"
+                    style="display: {% if producto.material == 'Plata' %}block{% else %}none{% endif %};">
+                    <div class="col-md-6">
+                        <label for="ley" class="form-label">Ley (Solo Plata)</label>
+                        <select class="form-select" id="ley" name="ley">
+                            <option value="">No cambiar</option>
+                            <option value="800" {% if producto.ley=='800' %}selected{% endif %}>800</option>
+                            <option value="830" {% if producto.ley=='830' %}selected{% endif %}>830</option>
+                            <option value="835" {% if producto.ley=='835' %}selected{% endif %}>835</option>
+                            <option value="900" {% if producto.ley=='900' %}selected{% endif %}>900</option>
+                            <option value="925" {% if producto.ley=='925' %}selected{% endif %}>925</option>
+                            <option value="950" {% if producto.ley=='950' %}selected{% endif %}>950</option>
+                            <option value="999" {% if producto.ley=='999' %}selected{% endif %}>999</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-toggle-on"></i> Estado
+                </h3>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="activo_producto" name="activo_producto" {%
+                            if producto.activo_producto %}checked{% endif %}>
+                        <label class="form-check-label" for="activo_producto">
+                            Producto Activo
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">Los productos inactivos no se mostrarán en el catálogo
+                        público</small>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="d-flex justify-content-end gap-3 mt-4">
+                <a href="{{ url_for('admin_catalogo') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/productos_editar.js') }}"></script>
+{% endblock %}

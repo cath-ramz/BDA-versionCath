@@ -1,0 +1,79 @@
+.error-page {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.error-content {
+    text-align: center;
+    max-width: 500px;
+}
+
+.error-icon {
+    font-size: 80px;
+    color: #ff9500;
+    margin-bottom: 20px;
+}
+
+.error-code {
+    font-size: 72px;
+    font-weight: 700;
+    color: #1e2a3a;
+    margin: 0;
+}
+
+.error-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: #1e2a3a;
+    margin: 20px 0;
+}
+
+.error-message {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 40px;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-actions .btn {
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #ff9500;
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #e68600;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}

@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Empleado - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-person-plus"></i> Registrar Nuevo Empleado
+                </h1>
+                <p class="text-muted">Complete los datos del empleado y asígnelo a una sucursal</p>
+            </div>
+            <a href="{{ url_for('admin_empleados') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-container">
+        <div id="alertContainer"></div>
+        
+        <form id="formCrearEmpleado">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="nombreUsuario" class="form-label">Nombre de Usuario <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nombreUsuario" required placeholder="Ej: ven.juan.perez">
+                    <small class="text-muted">Debe ser único en el sistema</small>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="contrasena" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" id="contrasena" required minlength="6">
+                    <small class="text-muted">Mínimo 6 caracteres</small>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="nombrePrimero" class="form-label">Nombre(s) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nombrePrimero" required placeholder="Ej: Juan">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="nombreSegundo" class="form-label">Segundo Nombre</label>
+                    <input type="text" class="form-control" id="nombreSegundo" placeholder="Ej: Carlos">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="apellidoPaterno" class="form-label">Apellido Paterno <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="apellidoPaterno" required placeholder="Ej: Pérez">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="apellidoMaterno" class="form-label">Apellido Materno</label>
+                    <input type="text" class="form-control" id="apellidoMaterno" placeholder="Ej: García">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="rfc" class="form-label">RFC</label>
+                    <input type="text" class="form-control" id="rfc" maxlength="13" placeholder="Ej: PERJ850101ABC">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="telefono" class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="telefono" maxlength="15" placeholder="Ej: 5512345678">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="correo" class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-control" id="correo" placeholder="Ej: juan.perez@example.com">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="idGenero" class="form-label">Género</label>
+                    <select class="form-select" id="idGenero">
+                        <option value="">Seleccione...</option>
+                        {% for genero in generos %}
+                            <option value="{{ genero.id_genero }}">{{ genero.genero }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="idRol" class="form-label">Rol <span class="text-danger">*</span></label>
+                    <select class="form-select" id="idRol" required>
+                        <option value="">Seleccione un rol...</option>
+                        {% for rol in roles %}
+                            <option value="{{ rol.id_roles }}">{{ rol.nombre_rol }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="idSucursal" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                    <select class="form-select" id="idSucursal" required>
+                        <option value="">Seleccione una sucursal...</option>
+                        {% for sucursal in sucursales %}
+                            <option value="{{ sucursal.id_sucursal }}">{{ sucursal.nombre_sucursal }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Registrar Empleado
+                    </button>
+                    <a href="{{ url_for('admin_empleados') }}" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('formCrearEmpleado').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const data = {
+        nombre_usuario: document.getElementById('nombreUsuario').value.trim(),
+        nombre_primero: document.getElementById('nombrePrimero').value.trim(),
+        nombre_segundo: document.getElementById('nombreSegundo').value.trim() || '',
+        apellido_paterno: document.getElementById('apellidoPaterno').value.trim(),
+        apellido_materno: document.getElementById('apellidoMaterno').value.trim() || '',
+        rfc_usuario: document.getElementById('rfc').value.trim() || '',
+        telefono: document.getElementById('telefono').value.trim() || '',
+        correo: document.getElementById('correo').value.trim() || '',
+        id_genero: document.getElementById('idGenero').value || null,
+        contrasena: document.getElementById('contrasena').value,
+        id_rol: document.getElementById('idRol').value,
+        id_sucursal: document.getElementById('idSucursal').value
+    };
+    
+    // Validaciones adicionales
+    if (data.contrasena.length < 6) {
+        showAlert('La contraseña debe tener al menos 6 caracteres', 'danger');
+        return;
+    }
+    
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...';
+    
+    try {
+        const response = await fetch('/api/admin/empleados/crear', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(result.mensaje || 'Empleado registrado exitosamente', 'success');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("admin_empleados") }}';
+            }, 1500);
+        } else {
+            showAlert(result.error || 'Error al registrar el empleado', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Registrar Empleado';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error de conexión al registrar el empleado', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Registrar Empleado';
+    }
+});
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+</script>
+{% endblock %}
+

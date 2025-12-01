@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema Joyería{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-gem" style="color: #ff9500;"></i> <span style="color: #ff9500; font-weight: 700;">Joyería</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.full_name if user is defined else 'Usuario' }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#">Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Rediseñando sidebar con flexbox para separar navegación y botón de logout -->
+            <nav class="col-md-2 d-md-block sidebar" style="background-color: #1e2a3a;">
+                <div class="sidebar-content">
+                    <!-- Header del sidebar con logo y título usando Jinja2 -->
+                    <div class="sidebar-header" style="padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-gem" style="color: #4fc3f7; font-size: 24px; margin-right: 8px;"></i>
+                            <span style="color: #ffeb3b; font-weight: 700; font-size: 18px;">Joyería</span>
+                        </div>
+                        <div style="color: #94a3b8; font-size: 12px; margin-left: 32px;">
+                            {% if user and user.role %}
+                                {{ user.role|title }}
+                            {% else %}
+                                Admin
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# Menú de navegación usando Jinja2 con lista de secciones según rol #}
+                    {% set rol_lower = (user.role|default(''))|lower %}
+                    {% if user and rol_lower == 'admin' %}
+                        {% set menu_items = [
+                            {'endpoint': 'admin', 'name': 'Dashboard', 'icon': 'bi-house', 'url': url_for('admin')},
+                            {'endpoint': 'admin_catalogo', 'name': 'Catálogo', 'icon': 'bi-box', 'url': url_for('admin_catalogo')},
+                            {'endpoint': 'admin_inventario', 'name': 'Inventario', 'icon': 'bi-box-seam', 'url': url_for('admin_inventario')},
+                            {'endpoint': 'admin_sucursales', 'name': 'Sucursales', 'icon': 'bi-shop', 'url': url_for('admin_sucursales')},
+                            {'endpoint': 'admin_empleados', 'name': 'Empleados', 'icon': 'bi-people', 'url': url_for('admin_empleados')},
+                            {'endpoint': 'admin_pedidos', 'name': 'Pedidos', 'icon': 'bi-cart', 'url': url_for('admin_pedidos')},
+                            {'endpoint': 'admin_facturas', 'name': 'Facturas', 'icon': 'bi-file-text', 'url': url_for('admin_facturas')},
+                            {'endpoint': 'admin_devoluciones', 'name': 'Devoluciones', 'icon': 'bi-arrow-counterclockwise', 'url': url_for('admin_devoluciones')},
+                            {'endpoint': 'admin_reportes', 'name': 'Reportes', 'icon': 'bi-bar-chart', 'url': url_for('admin_reportes')}
+                        ] %}
+                    {% elif user and rol_lower == 'vendedor' %}
+                        {% set menu_items = [
+                            {'endpoint': 'ventas', 'name': 'Dashboard', 'icon': 'bi-house', 'url': url_for('ventas')},
+                            {'endpoint': 'ventas_catalogo', 'name': 'Catálogo', 'icon': 'bi-box', 'url': url_for('ventas_catalogo')},
+                            {'endpoint': 'ventas_pedidos', 'name': 'Pedidos', 'icon': 'bi-cart', 'url': url_for('ventas_pedidos')},
+                            {'endpoint': 'ventas_facturas', 'name': 'Facturas', 'icon': 'bi-file-text', 'url': url_for('ventas_facturas')},
+                            {'endpoint': 'ventas_pagos', 'name': 'Pagos', 'icon': 'bi-credit-card', 'url': url_for('ventas_pagos')},
+                            {'endpoint': 'ventas_devoluciones', 'name': 'Devoluciones', 'icon': 'bi-arrow-counterclockwise', 'url': url_for('ventas_devoluciones')},
+                            {'endpoint': 'ventas_reportes', 'name': 'Reportes', 'icon': 'bi-bar-chart', 'url': url_for('ventas_reportes')}
+                        ] %}
+                    {% elif user and (rol_lower == 'inventarios' or rol_lower == 'gestor de sucursal') %}
+                        {% set menu_items = [
+                            {'endpoint': 'inventario', 'name': 'Dashboard', 'icon': 'bi-house', 'url': url_for('inventario')},
+                            {'endpoint': 'inventario_catalogo', 'name': 'Catálogo', 'icon': 'bi-box', 'url': url_for('inventario_catalogo')},
+                            {'endpoint': 'inventario_inventario', 'name': 'Inventario', 'icon': 'bi-file-text', 'url': url_for('inventario_inventario')},
+                            {'endpoint': 'inventario_devoluciones', 'name': 'Devoluciones', 'icon': 'bi-arrow-counterclockwise', 'url': url_for('inventario_devoluciones')},
+                            {'endpoint': 'inventario_reportes', 'name': 'Reportes', 'icon': 'bi-bar-chart', 'url': url_for('inventario_reportes')}
+                        ] %}
+                    {% elif user and rol_lower == 'analista financiero' %}
+                        {% set menu_items = [
+                            {'endpoint': 'finanzas', 'name': 'Dashboard', 'icon': 'bi-house', 'url': url_for('finanzas')},
+                            {'endpoint': 'finanzas_pedidos', 'name': 'Pedidos', 'icon': 'bi-cart', 'url': url_for('finanzas_pedidos')},
+                            {'endpoint': 'finanzas_facturas', 'name': 'Facturas', 'icon': 'bi-file-text', 'url': url_for('finanzas_facturas')},
+                            {'endpoint': 'finanzas_pagos', 'name': 'Cuentas', 'icon': 'bi-credit-card', 'url': url_for('finanzas_pagos')},
+                            {'endpoint': 'finanzas_reportes', 'name': 'Reportes', 'icon': 'bi-bar-chart', 'url': url_for('finanzas_reportes')}
+                        ] %}
+                    {% elif user and rol_lower == 'auditor' %}
+                        {% set menu_items = [
+                            {'endpoint': 'auditor', 'name': 'Dashboard', 'icon': 'bi-house', 'url': url_for('auditor')},
+                            {'endpoint': 'auditor_inventario', 'name': 'Inventario', 'icon': 'bi-box-seam', 'url': url_for('auditor_inventario')},
+                            {'endpoint': 'auditor_facturas', 'name': 'Facturas', 'icon': 'bi-file-text', 'url': url_for('auditor_facturas')},
+                            {'endpoint': 'auditor_reportes', 'name': 'Reportes', 'icon': 'bi-bar-chart', 'url': url_for('auditor_reportes')}
+                        ] %}
+                    {% else %}
+                        {# Menú vacío si no hay rol válido #}
+                        {% set menu_items = [] %}
+                    {% endif %}
+
+
+                    <ul class="nav flex-column sidebar-nav">
+                        {% for item in menu_items %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == item.endpoint or (item.endpoint == 'admin' and request.endpoint == 'dashboard') %}active{% endif %}" 
+                               href="{{ item.url }}">
+                                <i class="{{ item.icon }}"></i> {{ item.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <!-- Botón de cerrar sesión al final usando margin-top auto para empujar al fondo -->
+                    <div class="sidebar-logout">
+                        <a href="{{ url_for('logout') }}" class="btn btn-logout w-100">
+                            <i class="bi bi-arrow-right"></i> Cerrar Sesión
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Contenido Principal -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

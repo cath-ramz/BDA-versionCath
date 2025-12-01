@@ -1,0 +1,594 @@
+{% extends "cliente_base.html" %}
+
+{% block title %}Mi Cuenta - Joyería Premium{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .catalogo-hero {
+        background: white;
+        padding: 50px 0 30px;
+        margin-bottom: 30px;
+    }
+
+    .catalogo-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+        text-align: center;
+        letter-spacing: -0.5px;
+    }
+
+    .catalogo-subtitle {
+        font-size: 1rem;
+        color: #64748b;
+        text-align: center;
+        margin-bottom: 32px;
+        font-weight: 400;
+    }
+
+    .search-container {
+        max-width: 600px;
+        margin: 0 auto 30px;
+    }
+
+    .search-input {
+        position: relative;
+    }
+
+    .search-input i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 18px;
+        z-index: 1;
+    }
+
+    .search-input input {
+        padding-left: 45px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        height: 48px;
+        font-size: 15px;
+        background: white;
+        width: 100%;
+    }
+
+    .search-input input:focus {
+        border-color: #ff9500;
+        box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
+        outline: none;
+    }
+
+    .categorias-filtro {
+        max-width: 1200px;
+        margin: 0 auto 30px;
+        padding: 0 24px;
+    }
+
+    .categorias-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 12px;
+        text-align: center;
+    }
+
+    .categorias-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .btn-categoria {
+        background: white;
+        color: #1e293b;
+        border: 2px solid #e2e8f0;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-categoria:hover {
+        border-color: #ff9500;
+        color: #ff9500;
+        transform: translateY(-1px);
+    }
+
+    .btn-categoria.active {
+        background: #ff9500;
+        color: white;
+        border-color: #ff9500;
+    }
+
+    .productos-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px 60px;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #f1f5f9;
+    }
+
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .product-image {
+        width: 100%;
+        height: 280px;
+        object-fit: cover;
+        background: #f8fafc;
+        display: block;
+    }
+
+    .product-body {
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+
+    .product-name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
+    .product-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #ff9500;
+        margin-bottom: 16px;
+    }
+
+    .product-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+    }
+
+    .btn-ver-detalles {
+        background: #ff9500;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        flex: 1;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-ver-detalles:hover {
+        background: #e68600;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 149, 0, 0.3);
+    }
+
+    .btn-agregar-carrito {
+        background: white;
+        color: #ff9500;
+        border: 2px solid #ff9500;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        flex: 1;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .btn-agregar-carrito:hover {
+        background: #ff9500;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 149, 0, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="catalogo-hero">
+    <div class="container">
+        <h1 class="catalogo-title">Catálogo de Joyas Exclusivas</h1>
+        <p class="catalogo-subtitle">Descubre nuestra colección de joyas premium</p>
+        
+        <div class="search-container">
+            <div class="search-input">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" placeholder="Buscar productos..." id="searchInput">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="categorias-filtro">
+    <p class="categorias-title">Filtrar por categoría</p>
+    <div class="categorias-buttons">
+        <a href="{{ url_for('cliente_dashboard') }}" 
+           class="btn-categoria {% if not categoria_seleccionada %}active{% endif %}"
+           data-categoria="">
+            Todas
+        </a>
+        {% for categoria in categorias %}
+        <a href="{{ url_for('cliente_dashboard', categoria=categoria.nombre_categoria) }}" 
+           class="btn-categoria {% if categoria_seleccionada == categoria.nombre_categoria %}active{% endif %}"
+           data-categoria="{{ categoria.nombre_categoria }}">
+            {{ categoria.nombre_categoria }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="productos-container">
+    <div class="row g-4" id="productosGrid">
+        {% if productos %}
+            {% for producto in productos %}
+            <div class="col-md-4 col-lg-4 mb-4">
+                <div class="product-card">
+                    {% if producto.imagen_url %}
+                    <img src="{{ url_for('static', filename=producto.imagen_url.lstrip('/')) }}" 
+                         alt="{{ producto.nombre }}" 
+                         class="product-image"
+                         onerror="this.src='{{ url_for('static', filename='images/defaults/joyeria-default.png') }}';">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/defaults/joyeria-default.png') }}" 
+                         alt="{{ producto.nombre }}" 
+                         class="product-image">
+                    {% endif %}
+                    <div class="product-body">
+                        <h3 class="product-name">{{ producto.nombre }}</h3>
+                        <div class="product-price">
+                            {% if producto.descuento_producto and producto.descuento_producto > 0 %}
+                                <!-- Mostrar precio original tachado y badge de descuento -->
+                                <div style="margin-bottom: 8px;">
+                                    <span class="text-muted text-decoration-line-through" style="font-size: 1rem;">
+                                        ${{ "{:,.2f}".format(producto.precio_original) }}
+                                    </span>
+                                    <span class="badge bg-danger ms-2" style="font-size: 0.85rem; padding: 4px 8px;">-{{ producto.descuento_producto }}%</span>
+                                </div>
+                                <!-- Mostrar precio con descuento -->
+                                <div>
+                                    <span style="font-size: 1.8rem; font-weight: 700; color: #ff9500; display: block;">
+                                        ${{ "{:,.2f}".format(producto.precio) }}
+                                    </span>
+                                </div>
+                            {% else %}
+                                <!-- Sin descuento, mostrar solo el precio normal -->
+                                <span style="font-size: 1.8rem; font-weight: 700; color: #ff9500;">
+                                    ${{ "{:,.2f}".format(producto.precio) }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="product-buttons">
+                            <button class="btn btn-ver-detalles" onclick="verDetalles({{ producto.id_producto }})">
+                                Ver Detalles
+                            </button>
+                            <button class="btn btn-agregar-carrito" onclick="agregarAlCarrito({{ producto.id_producto }})">
+                                <i class="bi bi-cart-plus"></i>
+                                Carrito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-gem" style="font-size: 4rem; color: #cbd5e1;"></i>
+                <h3 class="mt-3 text-muted">No se encontraron productos</h3>
+                <p class="text-muted">Intenta con otra categoría o vuelve más tarde.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para Ver Detalles del Producto -->
+<div class="modal fade" id="modalVerDetalles" tabindex="-1" aria-labelledby="modalVerDetallesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalVerDetallesLabel">
+                    <i class="bi bi-eye"></i> Detalles del Producto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalDetallesBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando información del producto...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnAgregarDesdeModal" style="display: none;">
+                    <i class="bi bi-cart-plus"></i> Agregar al Carrito
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Búsqueda de productos
+    document.getElementById('searchInput')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.product-card');
+        
+        cards.forEach(card => {
+            const productName = card.querySelector('.product-name').textContent.toLowerCase();
+            const cardContainer = card.closest('.col-md-4');
+            
+            if (productName.includes(searchTerm)) {
+                cardContainer.style.display = '';
+            } else {
+                cardContainer.style.display = 'none';
+            }
+        });
+    });
+
+    // Función para ver detalles del producto
+    function verDetalles(idProducto) {
+        const modal = new bootstrap.Modal(document.getElementById('modalVerDetalles'));
+        const modalBody = document.getElementById('modalDetallesBody');
+        const btnAgregar = document.getElementById('btnAgregarDesdeModal');
+        
+        modalBody.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando información del producto...</p>
+            </div>
+        `;
+        
+        btnAgregar.style.display = 'none';
+        modal.show();
+        
+        fetch(`/api/productos/ver/${idProducto}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar los detalles del producto');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const precioOriginal = data.precio_unitario;
+                const descuento = data.descuento_producto || 0;
+                const precioFinal = precioOriginal * (1 - descuento / 100);
+                
+                let imagenUrl = '/static/images/defaults/joyeria-default.png';
+                if (data.imagen_url) {
+                    if (data.imagen_url.startsWith('/static/')) {
+                        imagenUrl = data.imagen_url;
+                    } else if (data.imagen_url.startsWith('static/')) {
+                        imagenUrl = '/' + data.imagen_url;
+                    } else {
+                        const cleanUrl = data.imagen_url.startsWith('/') ? data.imagen_url.substring(1) : data.imagen_url;
+                        imagenUrl = '/static/' + cleanUrl;
+                    }
+                }
+                const imagenDefault = '{{ url_for("static", filename="images/defaults/joyeria-default.png") }}';
+                
+                const stockTotal = data.stock_total || 0;
+                const disponible = stockTotal > 0;
+                
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-5 mb-4">
+                            <img src="${imagenUrl}" 
+                                 alt="${data.nombre_producto}" 
+                                 class="img-fluid rounded"
+                                 style="width: 100%; height: 400px; object-fit: cover;"
+                                 onerror="this.src='${imagenDefault}'">
+                        </div>
+                        <div class="col-md-7 mb-4">
+                            <h3 class="mb-3" style="color: #1e293b;">${data.nombre_producto}</h3>
+                            <div class="mb-4">
+                                ${descuento > 0 ? `
+                                    <div class="mb-2">
+                                        <span class="text-muted text-decoration-line-through" style="font-size: 1.1rem;">
+                                            $${precioOriginal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                        </span>
+                                        <span class="badge bg-danger ms-2">-${descuento}%</span>
+                                    </div>
+                                ` : ''}
+                                <div class="mb-2">
+                                    <span style="font-size: 2rem; font-weight: 700; color: #ff9500;">
+                                        $${precioFinal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                ${disponible 
+                                    ? `<span class="badge bg-success" style="font-size: 0.9rem; padding: 8px 12px;">
+                                        <i class="bi bi-check-circle"></i> Disponible
+                                    </span>`
+                                    : `<span class="badge bg-danger" style="font-size: 0.9rem; padding: 8px 12px;">
+                                        <i class="bi bi-x-circle"></i> Agotado
+                                    </span>`}
+                            </div>
+                            <div class="border-top pt-3">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="bi bi-info-circle"></i> Información del Producto
+                                </h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td class="fw-bold" style="width: 40%;">Categoría:</td>
+                                        <td>${data.nombre_categoria || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Material:</td>
+                                        <td>${data.material || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Género:</td>
+                                        <td>${data.genero_producto || 'N/A'}</td>
+                                    </tr>
+                                    ${data.talla ? `<tr><td class="fw-bold">Talla:</td><td>${data.talla}</td></tr>` : ''}
+                                    ${data.kilataje ? `<tr><td class="fw-bold">Kilataje:</td><td>${data.kilataje}</td></tr>` : ''}
+                                    ${data.ley ? `<tr><td class="fw-bold">Ley:</td><td>${data.ley}</td></tr>` : ''}
+                                    <tr>
+                                        <td class="fw-bold">SKU:</td>
+                                        <td><code class="text-muted">${data.sku || 'N/A'}</code></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                if (disponible) {
+                    btnAgregar.style.display = 'inline-block';
+                    btnAgregar.onclick = () => {
+                        modal.hide();
+                        agregarAlCarrito(idProducto);
+                    };
+                } else {
+                    btnAgregar.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>Error:</strong> ${error.message || 'No se pudo cargar la información del producto'}
+                    </div>
+                `;
+            });
+    }
+
+    // Función para agregar al carrito
+    function agregarAlCarrito(idProducto) {
+        const btn = event.target.closest('.btn-agregar-carrito');
+        const originalHTML = btn ? btn.innerHTML : '';
+        
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Agregando...';
+        }
+        
+        fetch('/api/carrito/agregar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id_producto: idProducto,
+                cantidad: 1
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (btn) {
+                    btn.innerHTML = '<i class="bi bi-check"></i> Agregado';
+                    btn.style.background = '#22c55e';
+                    btn.style.borderColor = '#22c55e';
+                    btn.style.color = 'white';
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                        btn.disabled = false;
+                    }, 2000);
+                }
+                
+                // Recargar carrito para sincronizar con sessionStorage
+                if (typeof cargarCarrito === 'function') {
+                    cargarCarrito();
+                } else {
+                    // Si cargarCarrito no está disponible, sincronizar directamente
+                    fetch('/api/carrito/obtener')
+                        .then(r => r.json())
+                        .then(carritoData => {
+                            if (carritoData.carrito && carritoData.carrito.length > 0) {
+                                sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                console.log('[DEBUG] Carrito sincronizado con sessionStorage después de agregar producto');
+                            }
+                        })
+                        .catch(err => console.error('Error sincronizando carrito:', err));
+                }
+                
+                if (typeof window.actualizarBadgeCarrito === 'function') {
+                    window.actualizarBadgeCarrito(data.total_items || 0);
+                } else {
+                    const cartBadge = document.getElementById('cartBadge');
+                    if (cartBadge) {
+                        const totalItems = data.total_items || 0;
+                        cartBadge.textContent = totalItems;
+                        if (totalItems > 0) {
+                            cartBadge.style.display = 'flex';
+                        } else {
+                            cartBadge.style.display = 'none';
+                        }
+                    }
+                }
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo agregar el producto'));
+                if (btn) {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const errorMsg = error.error || error.message || 'Error al agregar producto al carrito';
+            alert('Error: ' + errorMsg);
+            if (btn) {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        });
+    }
+</script>
+{% endblock %}
+

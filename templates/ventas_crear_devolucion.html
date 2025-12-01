@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Devolución - Panel de Ventas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_crear_devolucion.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-arrow-counterclockwise"></i> Crear Nueva Devolución
+        </h1>
+        <p class="text-muted">Complete el formulario para procesar una devolución</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-container">
+        <form id="formDevolucion">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="id_pedido" class="form-label required-field">Pedido</label>
+                    <select class="form-select" id="id_pedido" name="id_pedido" required>
+                        <option value="">Seleccione un pedido</option>
+                        {% for pedido in pedidos %}
+                        <option value="{{ pedido.id_pedido }}">Pedido #{{ pedido.id_pedido }} - {{ pedido.fecha_pedido
+                            }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="productosContainer" class="productos-list" style="display: none;">
+                <h5 class="mb-3">Productos del Pedido</h5>
+                <div id="productosList"></div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-3 mt-4 align-items-center">
+                <a href="{{ url_for('ventas_devoluciones') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Crear Devolución
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pasar tipos y motivos de devolución al JavaScript
+    const TIPOS_DEVOLUCION = [
+        {% for tipo in tipos_devolucion %}
+        {
+            id: {{ tipo.id_tipo_devoluciones }},
+            nombre: "{{ tipo.tipo_devolucion }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const MOTIVOS_DEVOLUCION = [
+        {% for motivo in motivos_devolucion %}
+        "{{ motivo }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+</script>
+<script src="{{ url_for('static', filename='js/ventas_crear_devolucion.js') }}"></script>
+{% endblock %}

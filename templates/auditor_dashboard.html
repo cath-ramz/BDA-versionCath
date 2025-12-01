@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Auditoría - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auditor_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Panel de Auditoría</h1>
+        <p class="dashboard-subtitle">Monitoreo y control de conformidad del sistema</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- KPI Cards -->
+    <div class="kpi-cards" id="kpiCards">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Registros Auditados</div>
+                    <div class="kpi-value" id="kpiRegistros">0</div>
+                    <div class="kpi-trend positive" id="kpiRegistrosTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon registros">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Discrepancias</div>
+                    <div class="kpi-value" id="kpiDiscrepancias">0</div>
+                    <div class="kpi-trend negative" id="kpiDiscrepanciasTrend">
+                        <span>-0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon discrepancias">
+                    <i class="bi bi-eye-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Conformidad</div>
+                    <div class="kpi-value" id="kpiConformidad">0%</div>
+                    <div class="kpi-trend positive" id="kpiConformidadTrend">
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon conformidad">
+                    <i class="bi bi-shield-check-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Reportes Generados</div>
+                    <div class="kpi-value" id="kpiReportes">0</div>
+                    <div class="kpi-trend positive" id="kpiReportesTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon reportes">
+                    <i class="bi bi-bar-chart-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Devoluciones por Motivo (Pie Chart) -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Devoluciones por Motivo</h3>
+                    <div id="chartDevoluciones" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Actividad de Auditoría por Módulo (Bar Chart) -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Actividad de Auditoría por Módulo</h3>
+                    <div id="chartActividadModulo" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registros de Auditoría Recientes -->
+    <div class="table-container">
+        <h3 class="table-title">Registros de Auditoría Recientes</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>ID Registro</th>
+                        <th>Fecha</th>
+                        <th>Estado Inicial</th>
+                        <th>Estado Final</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaRegistrosRecientes">
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-hourglass-split"></i> Cargando registros...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="{{ url_for('static', filename='js/auditor_dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,113 @@
+body {
+    background: #1e293b;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+}
+
+.register-container {
+    width: 100%;
+    max-width: 600px;
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.register-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.register-header h1 {
+    color: #1e293b;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.register-header p {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-label .required {
+    color: #ef4444;
+}
+
+.form-control,
+.form-select {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #ff9500;
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
+}
+
+.btn-register {
+    width: 100%;
+    background: #ff9500;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+}
+
+.btn-register:hover {
+    background: #e68600;
+    color: white;
+}
+
+.btn-register:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.register-links {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.register-links a {
+    color: #ff9500;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.register-links a:hover {
+    text-decoration: underline;
+}
+
+.alert {
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.row {
+    margin-bottom: 15px;
+}
+
+.text-muted {
+    font-size: 12px;
+    margin-top: 4px;
+}

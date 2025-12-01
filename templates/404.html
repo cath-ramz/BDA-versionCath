@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Página no encontrada{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="error-404-container">
+    <h1 class="error-404-number">404</h1>
+    <p class="error-404-message">
+        <span class="text-danger">Lo siento!</span> Página no encontrada.
+    </p>
+    <p class="error-404-description">La página que estás buscando no existe.</p>
+    <a href="{{ url_for('dashboard') }}" class="btn-return-dashboard">Volver al Dashboard</a>
+</div>
+{% endblock %}

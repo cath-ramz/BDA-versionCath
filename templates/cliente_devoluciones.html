@@ -1,0 +1,135 @@
+{% extends "cliente_base.html" %}
+
+{% block title %}Mis Devoluciones - Joyería Premium{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8fafc;
+    }
+
+    .page-header {
+        background: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+        padding: 12px;
+    }
+
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-arrow-return-left"></i> Mis Devoluciones
+                </h1>
+                <p class="text-muted">Historial de todas tus devoluciones</p>
+            </div>
+            <a href="{{ url_for('cliente_crear_devolucion') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Nueva Devolución
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="table-container">
+        {% if devoluciones %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID Devolución</th>
+                        <th>ID Pedido</th>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Productos</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for devolucion in devoluciones %}
+                    <tr>
+                        <td><strong>#{{ devolucion.id_devolucion }}</strong></td>
+                        <td>#{{ devolucion.id_pedido }}</td>
+                        <td>{{ devolucion.fecha_devolucion.strftime('%d/%m/%Y') if devolucion.fecha_devolucion else 'N/A' }}</td>
+                        <td>{{ devolucion.tipo_devolucion or 'N/A' }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if devolucion.estado_devolucion == 'Aprobada' or devolucion.estado_devolucion == 'Completado' %}bg-success
+                                {% elif devolucion.estado_devolucion == 'Pendiente' %}bg-warning
+                                {% elif devolucion.estado_devolucion == 'En Revisión' %}bg-info
+                                {% elif devolucion.estado_devolucion == 'Rechazada' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ devolucion.estado_devolucion or 'N/A' }}
+                            </span>
+                        </td>
+                        <td>{{ devolucion.cantidad_productos or 0 }}</td>
+                        <td><strong>${{ "{:,.2f}".format(devolucion.total_devolucion or 0) }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-arrow-return-left" style="font-size: 4rem; color: #cbd5e1;"></i>
+            <h3 class="mt-3 text-muted">No tienes devoluciones aún</h3>
+            <p class="text-muted">Puedes crear una devolución desde tus pedidos</p>
+            <a href="{{ url_for('cliente_crear_devolucion') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle"></i> Crear Devolución
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

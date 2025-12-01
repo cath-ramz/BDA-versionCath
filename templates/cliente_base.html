@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mi Cuenta - Joyería Premium{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Header Styles - Barra gris claro */
+        .catalogo-header {
+            background: #e5e7eb;
+            border-bottom: 1px solid #d1d5db;
+        }
+
+        .catalogo-header .navbar {
+            background: #e5e7eb !important;
+            padding: 16px 0;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header con navegación del cliente -->
+    <header class="catalogo-header">
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand d-flex align-items-center" href="{{ url_for('cliente_dashboard') }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                        <path d="M12 2L14.09 8.26L20 9.27L15 13.14L16.18 19.02L12 15.77L7.82 19.02L9 13.14L4 9.27L9.91 8.26L12 2Z" fill="#ff9500"/>
+                    </svg>
+                    <span style="color: #1e293b; font-weight: 700; font-size: 20px;">Joyería Premium</span>
+                </a>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="#" class="cart-icon position-relative" id="cartIcon" style="color: #1e293b; font-size: 22px; text-decoration: none; display: flex; align-items: center; cursor: pointer;">
+                        <i class="bi bi-cart3"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="font-size: 10px; padding: 2px 5px; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">0</span>
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ user.full_name if user else 'Usuario' }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                            <li><a class="dropdown-item" href="{{ url_for('cliente_dashboard') }}"><i class="bi bi-house"></i> Catálogo</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('cliente_pedidos') }}"><i class="bi bi-cart"></i> Mis Pedidos</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('cliente_facturas') }}"><i class="bi bi-file-text"></i> Mis Facturas</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('cliente_devoluciones') }}"><i class="bi bi-arrow-return-left"></i> Mis Devoluciones</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('cliente_perfil') }}"><i class="bi bi-person"></i> Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Overlay para cerrar el carrito -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+
+    <!-- Sidebar del Carrito -->
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-sidebar-content">
+            <div class="cart-sidebar-header">
+                <h3 class="cart-sidebar-title">
+                    <i class="bi bi-cart3"></i> Carrito de Compras
+                </h3>
+                <button class="cart-sidebar-close" id="closeCart">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="cart-sidebar-body" id="cartItems">
+                <div class="cart-empty">
+                    <i class="bi bi-cart-x"></i>
+                    <p>Tu carrito está vacío</p>
+                </div>
+            </div>
+            <div class="cart-sidebar-footer">
+                <div class="mb-3" style="padding: 0 20px;">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkSolicitarFactura" style="cursor: pointer;">
+                        <label class="form-check-label" for="checkSolicitarFactura" style="cursor: pointer; font-size: 0.9rem; color: #64748b;">
+                            <i class="bi bi-receipt"></i> Solicitar factura
+                        </label>
+                    </div>
+                </div>
+                <div class="cart-total">
+                    <div class="cart-total-label">Total:</div>
+                    <div class="cart-total-amount" id="cartTotal">$0.00</div>
+                </div>
+                <button class="btn-cart-pagar" id="btnPagar" disabled>
+                    <i class="bi bi-credit-card"></i> Pagar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Funcionalidad del Carrito Sidebar (mismo código que catalogo_base.html)
+        (function() {
+            const cartSidebar = document.getElementById('cartSidebar');
+            const cartOverlay = document.getElementById('cartOverlay');
+            const cartIcon = document.getElementById('cartIcon');
+            const closeCart = document.getElementById('closeCart');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const btnPagar = document.getElementById('btnPagar');
+            const cartBadge = document.getElementById('cartBadge');
+
+            function abrirCarrito() {
+                cartSidebar.classList.add('active');
+                cartOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                cargarCarrito();
+            }
+
+            function cerrarCarrito() {
+                cartSidebar.classList.remove('active');
+                cartOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            if (cartIcon) {
+                cartIcon.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    abrirCarrito();
+                });
+            }
+
+            if (closeCart) {
+                closeCart.addEventListener('click', cerrarCarrito);
+            }
+
+            if (cartOverlay) {
+                cartOverlay.addEventListener('click', cerrarCarrito);
+            }
+
+            function cargarCarrito() {
+                fetch('/api/carrito/obtener')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.carrito && data.carrito.length > 0) {
+                            renderizarCarrito(data.carrito, data.total);
+                            actualizarBadgeCarrito(data.total_items);
+                            btnPagar.disabled = false;
+                        } else {
+                            cartItems.innerHTML = `
+                                <div class="cart-empty">
+                                    <i class="bi bi-cart-x"></i>
+                                    <p>Tu carrito está vacío</p>
+                                </div>
+                            `;
+                            cartTotal.textContent = '$0.00';
+                            actualizarBadgeCarrito(0);
+                            btnPagar.disabled = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cargando carrito:', error);
+                    });
+            }
+
+            function renderizarCarrito(items, total) {
+                cartItems.innerHTML = items.map(item => `
+                    <div class="cart-item" data-product-id="${item.id_producto}">
+                        <img src="https://via.placeholder.com/80x80?text=Joya" 
+                             alt="${item.nombre}" 
+                             class="cart-item-image">
+                        <div class="cart-item-details">
+                            <div class="cart-item-name">${item.nombre}</div>
+                            <div class="cart-item-sku">SKU: ${item.sku || 'N/A'}</div>
+                            <div class="cart-item-price">$${parseFloat(item.precio).toLocaleString('es-MX', {minimumFractionDigits: 2})}</div>
+                            <div class="cart-item-controls">
+                                <div class="cart-item-quantity">
+                                    <button onclick="decrementarCantidad(${item.id_producto})" type="button">-</button>
+                                    <input type="number" 
+                                           value="${item.cantidad}" 
+                                           min="1" 
+                                           onchange="actualizarCantidad(${item.id_producto}, this.value)"
+                                           readonly>
+                                    <button onclick="incrementarCantidad(${item.id_producto})" type="button">+</button>
+                                </div>
+                                <button class="cart-item-remove" onclick="eliminarDelCarrito(${item.id_producto})" type="button">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="cart-item-total">
+                                Subtotal: $${(parseFloat(item.precio) * item.cantidad).toLocaleString('es-MX', {minimumFractionDigits: 2})}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                cartTotal.textContent = '$' + parseFloat(total).toLocaleString('es-MX', {minimumFractionDigits: 2});
+            }
+
+            window.actualizarBadgeCarrito = function(totalItems) {
+                if (cartBadge) {
+                    cartBadge.textContent = totalItems || 0;
+                    if (totalItems > 0) {
+                        cartBadge.style.display = 'flex';
+                    } else {
+                        cartBadge.style.display = 'none';
+                    }
+                }
+            };
+
+            window.incrementarCantidad = function(idProducto) {
+                const item = document.querySelector(`.cart-item[data-product-id="${idProducto}"]`);
+                const input = item.querySelector('input[type="number"]');
+                const nuevaCantidad = parseInt(input.value) + 1;
+                actualizarCantidad(idProducto, nuevaCantidad);
+            };
+
+            window.decrementarCantidad = function(idProducto) {
+                const item = document.querySelector(`.cart-item[data-product-id="${idProducto}"]`);
+                const input = item.querySelector('input[type="number"]');
+                const nuevaCantidad = Math.max(1, parseInt(input.value) - 1);
+                actualizarCantidad(idProducto, nuevaCantidad);
+            };
+
+            window.actualizarCantidad = function(idProducto, cantidad) {
+                fetch('/api/carrito/actualizar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id_producto: idProducto,
+                        cantidad: parseInt(cantidad)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        cargarCarrito();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo actualizar la cantidad'));
+                        cargarCarrito();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al actualizar cantidad');
+                    cargarCarrito();
+                });
+            };
+
+            window.eliminarDelCarrito = function(idProducto) {
+                if (!confirm('¿Estás seguro de eliminar este producto del carrito?')) {
+                    return;
+                }
+
+                fetch('/api/carrito/eliminar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id_producto: idProducto
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        cargarCarrito();
+                        actualizarBadgeCarrito(data.total_items);
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo eliminar el producto'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar producto');
+                });
+            };
+
+            if (btnPagar) {
+                btnPagar.addEventListener('click', function() {
+                    fetch('/api/carrito/obtener')
+                        .then(r => r.json())
+                        .then(carritoData => {
+                            if (!carritoData.carrito || carritoData.carrito.length === 0) {
+                                alert('El carrito está vacío');
+                                return;
+                            }
+                            
+                            btnPagar.disabled = true;
+                            btnPagar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+                            
+                            // Verificar si se solicita factura
+                            const checkSolicitarFactura = document.getElementById('checkSolicitarFactura');
+                            const solicitarFactura = checkSolicitarFactura ? checkSolicitarFactura.checked : false;
+                            
+                            fetch('/api/carrito/checkout', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    solicitar_factura: solicitarFactura
+                                })
+                            })
+                            .then(response => {
+                                if (response.status === 401) {
+                                    return response.json().then(data => {
+                                        if (data.require_login || data.error === 'ERROR_SIN_CLIENTE') {
+                                            // Guardar el carrito en sessionStorage para restaurarlo después del login
+                                            if (carritoData && carritoData.carrito) {
+                                                sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                            }
+                                            // Redirigir automáticamente al login
+                                            window.location.href = '{{ url_for("login") }}';
+                                            return Promise.resolve({ redirected: true });
+                                        }
+                                        throw new Error(data.error || 'Debe iniciar sesión');
+                                    });
+                                }
+                                if (!response.ok) {
+                                    // Clonar la respuesta para poder leerla múltiples veces
+                                    const responseClone = response.clone();
+                                    return response.json().then(err => {
+                                        console.log('[DEBUG cliente_base] Error response:', err);
+                                        // Si requiere completar datos, redirigir
+                                        if (err && err.require_complete_data) {
+                                            console.log('[DEBUG cliente_base] Requiere completar datos, redirigiendo...');
+                                            // Guardar el carrito en sessionStorage
+                                            if (carritoData && carritoData.carrito) {
+                                                sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                                console.log('[DEBUG cliente_base] Carrito guardado en sessionStorage');
+                                            }
+                                            // Redirigir inmediatamente
+                                            window.location.href = '/cliente/completar-datos';
+                                            return Promise.resolve({ redirected: true });
+                                        }
+                                        // Si requiere login (ERROR_SIN_CLIENTE), redirigir al login
+                                        if (err && (err.require_login || err.error === 'ERROR_SIN_CLIENTE')) {
+                                            console.log('[DEBUG cliente_base] Usuario no autenticado, redirigiendo a login...');
+                                            // Guardar el carrito en sessionStorage para restaurarlo después del login
+                                            if (carritoData && carritoData.carrito) {
+                                                sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                                console.log('[DEBUG cliente_base] Carrito guardado en sessionStorage');
+                                            }
+                                            // Redirigir automáticamente al login
+                                            window.location.href = '{{ url_for("login") }}';
+                                            return Promise.resolve({ redirected: true });
+                                        }
+                                        return Promise.reject(err);
+                                    }).catch(parseError => {
+                                        console.error('[DEBUG cliente_base] Error parseando JSON:', parseError);
+                                        // Intentar leer el texto
+                                        return responseClone.text().then(text => {
+                                            console.log('[DEBUG cliente_base] Respuesta de error (texto):', text);
+                                            // Si contiene ERROR_FALTA_RFC o require_complete_data, redirigir
+                                            if (text.includes('ERROR_FALTA_RFC') || text.includes('require_complete_data') || text.includes('ERROR_FALTA_DIRECCION') || text.includes('ERROR_FALTA_TELEFONO')) {
+                                                console.log('[DEBUG cliente_base] Detectado error de datos faltantes, redirigiendo...');
+                                                if (carritoData && carritoData.carrito) {
+                                                    sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                                }
+                                                window.location.href = '/cliente/completar-datos';
+                                                return Promise.resolve({ redirected: true });
+                                            }
+                                            // Si contiene ERROR_SIN_CLIENTE o require_login, redirigir al login
+                                            if (text.includes('ERROR_SIN_CLIENTE') || text.includes('require_login')) {
+                                                console.log('[DEBUG cliente_base] Detectado error de usuario no autenticado, redirigiendo a login...');
+                                                if (carritoData && carritoData.carrito) {
+                                                    sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                                }
+                                                window.location.href = '{{ url_for("login") }}';
+                                                return Promise.resolve({ redirected: true });
+                                            }
+                                            return Promise.reject({ error: text });
+                                        });
+                                    });
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Si se redirigió, no hacer nada más
+                                if (data && data.redirected) {
+                                    return;
+                                }
+                                if (data && data.require_complete_data) {
+                                    // Guardar el carrito y redirigir
+                                    if (carritoData && carritoData.carrito) {
+                                        sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                    }
+                                    window.location.href = '/cliente/completar-datos';
+                                    return;
+                                }
+                                if (data.success) {
+                                    // Siempre mostrar modal de pago, con o sin factura
+                                    // Pasar también el descuento de clasificación si existe
+                                    abrirModalPagoCheckout(data.id_pedido, data.id_factura, data.total, data.descuento_clasificacion, data.total_sin_descuento_clasificacion);
+                                } else {
+                                    // Mostrar mensaje amigable (el backend ya retorna mensajes amigables)
+                                    const mensaje = data.mensaje || data.error || 'No se pudo procesar el checkout';
+                                    alert(mensaje);
+                                    btnPagar.disabled = false;
+                                    btnPagar.innerHTML = '<i class="bi bi-credit-card"></i> Pagar';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error en checkout:', error);
+                                // Verificar si ya se redirigió
+                                if (window.location.pathname === '/cliente/completar-datos') {
+                                    console.log('[DEBUG cliente_base] Ya se redirigió, no mostrar error');
+                                    return;
+                                }
+                                // Si el error contiene información de datos faltantes, redirigir
+                                const errorStr = JSON.stringify(error);
+                                if (errorStr.includes('ERROR_FALTA_RFC') || errorStr.includes('ERROR_FALTA_DIRECCION') || errorStr.includes('ERROR_FALTA_TELEFONO') || errorStr.includes('require_complete_data') || (error.error && error.error.includes('ERROR_FALTA'))) {
+                                    console.log('[DEBUG cliente_base] Detectado error de datos faltantes en catch, redirigiendo...');
+                                    if (carritoData && carritoData.carrito) {
+                                        sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                    }
+                                    window.location.href = '/cliente/completar-datos';
+                                    return;
+                                }
+                                // Si el error contiene ERROR_SIN_CLIENTE, redirigir al login
+                                if (errorStr.includes('ERROR_SIN_CLIENTE') || errorStr.includes('require_login')) {
+                                    console.log('[DEBUG cliente_base] Detectado error de usuario no autenticado en catch, redirigiendo a login...');
+                                    if (carritoData && carritoData.carrito) {
+                                        sessionStorage.setItem('carrito_pendiente', JSON.stringify(carritoData.carrito));
+                                    }
+                                    window.location.href = '{{ url_for("login") }}';
+                                    return;
+                                }
+                                const errorMsg = (error.errorData && error.errorData.mensaje) || 
+                                              (error.errorData && error.errorData.error) || 
+                                              error.error || 
+                                              error.message || 
+                                              'Lo sentimos, hubo un problema al procesar tu pedido. Por favor, intenta nuevamente.';
+                                // Si el mensaje ya empieza con "Error:" o "Lo sentimos", no agregarlo de nuevo
+                                const mensajeFinal = errorMsg.startsWith('Error:') || errorMsg.startsWith('Lo sentimos') ? errorMsg : ('Error: ' + errorMsg);
+                                alert(mensajeFinal);
+                                btnPagar.disabled = false;
+                                btnPagar.innerHTML = '<i class="bi bi-credit-card"></i> Pagar';
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error obteniendo carrito:', error);
+                            alert('Error al obtener el carrito');
+                            btnPagar.disabled = false;
+                            btnPagar.innerHTML = '<i class="bi bi-credit-card"></i> Pagar';
+                        });
+                });
+            }
+            
+            cargarCarrito();
+            
+            // Restaurar carrito desde sessionStorage si existe (después de login)
+            const carritoPendiente = sessionStorage.getItem('carrito_pendiente');
+            if (carritoPendiente) {
+                console.log('[DEBUG] Carrito pendiente encontrado en sessionStorage, restaurando...');
+                try {
+                    const carrito = JSON.parse(carritoPendiente);
+                    console.log('[DEBUG] Carrito parseado:', carrito);
+                    // Restaurar carrito en la sesión del servidor
+                    fetch('/api/carrito/restaurar', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ carrito: carrito })
+                    })
+                    .then(r => {
+                        console.log('[DEBUG] Respuesta restaurar carrito:', r.status);
+                        return r.json();
+                    })
+                    .then(data => {
+                        console.log('[DEBUG] Datos restaurados:', data);
+                        if (data.success) {
+                            // Limpiar sessionStorage
+                            sessionStorage.removeItem('carrito_pendiente');
+                            console.log('[DEBUG] Carrito restaurado exitosamente, recargando...');
+                            // Recargar carrito para mostrar los items restaurados
+                            cargarCarrito();
+                        } else {
+                            console.error('[DEBUG] Error restaurando carrito:', data.error);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('[DEBUG] Error restaurando carrito:', err);
+                    });
+                } catch (e) {
+                    console.error('[DEBUG] Error parseando carrito pendiente:', e);
+                    sessionStorage.removeItem('carrito_pendiente');
+                }
+            } else {
+                console.log('[DEBUG] No hay carrito pendiente en sessionStorage');
+            }
+        })();
+        
+        // Función para abrir modal de pago desde checkout
+        function abrirModalPagoCheckout(idPedido, idFactura, total, descuentoClasificacion = 0, totalSinDescuentoClasificacion = null) {
+            // Obtener métodos de pago
+            fetch('/api/ventas/pagos/metodos')
+                .then(r => r.json())
+                .then(metodos => {
+                    const selectMetodo = document.getElementById('pagoCheckoutMetodo');
+                    if (selectMetodo) {
+                        selectMetodo.innerHTML = '<option value="">Seleccione un método...</option>';
+                        metodos.forEach(metodo => {
+                            selectMetodo.innerHTML += `<option value="${metodo.id_metodo_pago}">${metodo.nombre_metodo_pago}</option>`;
+                        });
+                    }
+
+                    document.getElementById('pagoCheckoutIdPedido').value = idPedido;
+                    // Si no hay factura, dejar el campo vacío (se creará al pagar)
+                    document.getElementById('pagoCheckoutIdFactura').value = idFactura || '';
+                    
+                    // Mostrar descuento de clasificación si existe
+                    const totalElement = document.getElementById('pagoCheckoutTotal');
+                    const descuentoInfo = document.getElementById('pagoCheckoutDescuentoClasificacion');
+                    
+                    if (descuentoClasificacion && descuentoClasificacion > 0 && totalSinDescuentoClasificacion) {
+                        // Mostrar total sin descuento tachado y el descuento aplicado
+                        if (descuentoInfo) {
+                            descuentoInfo.innerHTML = `
+                                <div class="mb-2">
+                                    <span class="text-muted text-decoration-line-through" style="font-size: 0.9rem;">
+                                        Subtotal: $${parseFloat(totalSinDescuentoClasificacion).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    <span class="badge bg-success ms-2">Descuento Cliente: -${descuentoClasificacion}%</span>
+                                </div>
+                            `;
+                            descuentoInfo.style.display = 'block';
+                        }
+                        totalElement.textContent = '$' + parseFloat(total).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+                    } else {
+                        // No hay descuento de clasificación
+                        if (descuentoInfo) {
+                            descuentoInfo.style.display = 'none';
+                            descuentoInfo.innerHTML = '';
+                        }
+                        totalElement.textContent = '$' + parseFloat(total).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+                    }
+                    
+                    document.getElementById('pagoCheckoutImporte').value = total;
+                    document.getElementById('pagoCheckoutImporte').max = total;
+
+                    const modal = new bootstrap.Modal(document.getElementById('modalPagoCheckout'));
+                    modal.show();
+
+                    // Rehabilitar botón pagar
+                    const btnPagar = document.getElementById('btnPagar');
+                    if (btnPagar) {
+                        btnPagar.disabled = false;
+                        btnPagar.innerHTML = '<i class="bi bi-credit-card"></i> Pagar';
+                    }
+                })
+                .catch(err => {
+                    console.error('Error obteniendo métodos de pago:', err);
+                    alert('Error al cargar métodos de pago');
+                    const btnPagar = document.getElementById('btnPagar');
+                    if (btnPagar) {
+                        btnPagar.disabled = false;
+                        btnPagar.innerHTML = '<i class="bi bi-credit-card"></i> Pagar';
+                    }
+                });
+        }
+        
+        // Función para registrar pago desde checkout
+        window.registrarPagoCheckout = function () {
+            const form = document.getElementById('formPagoCheckout');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const data = {
+                id_pedido: parseInt(document.getElementById('pagoCheckoutIdPedido').value),
+                importe: parseFloat(document.getElementById('pagoCheckoutImporte').value),
+                id_metodo_pago: parseInt(document.getElementById('pagoCheckoutMetodo').value)
+            };
+
+            const btn = document.getElementById('btnRegistrarPagoCheckout');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+
+            fetch(`/api/ventas/pedidos/${data.id_pedido}/pagar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    importe: data.importe,
+                    id_metodo_pago: data.id_metodo_pago
+                })
+            })
+                .then(response => {
+                    // Verificar si la respuesta es exitosa
+                    if (!response.ok) {
+                        // Intentar parsear el error
+                        return response.json().then(err => {
+                            throw new Error(err.mensaje || err.error || 'Error al registrar el pago');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert(data.mensaje || '¡Pago registrado exitosamente!');
+
+                        // Cerrar modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalPagoCheckout'));
+                        if (modal) modal.hide();
+
+                        // Vaciar carrito
+                        fetch('/api/carrito/vaciar', { method: 'POST' })
+                            .then(() => {
+                                if (typeof cargarCarrito === 'function') {
+                                    cargarCarrito();
+                                }
+                                if (typeof window.actualizarBadgeCarrito === 'function') {
+                                    window.actualizarBadgeCarrito(0);
+                                }
+                                // Cerrar carrito
+                                const cartSidebar = document.getElementById('cartSidebar');
+                                const cartOverlay = document.getElementById('cartOverlay');
+                                if (cartSidebar) cartSidebar.classList.remove('active');
+                                if (cartOverlay) cartOverlay.classList.remove('active');
+                                document.body.style.overflow = '';
+
+                                // Redirigir a pedidos
+                                alert('¡Gracias por su compra!');
+                                window.location.href = '{{ url_for("cliente_pedidos") }}';
+                            });
+                    } else {
+                        alert('Error: ' + (data.mensaje || data.error || 'No se pudo registrar el pago'));
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-credit-card"></i> Registrar Pago';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: ' + (error.message || 'Error al registrar el pago. Por favor, intente nuevamente.'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-credit-card"></i> Registrar Pago';
+                });
+        };
+    </script>
+    
+    <!-- Modal para Pago desde Checkout -->
+    <div class="modal fade" id="modalPagoCheckout" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Completar Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formPagoCheckout">
+                        <input type="hidden" id="pagoCheckoutIdPedido" name="id_pedido">
+                        <input type="hidden" id="pagoCheckoutIdFactura" name="id_factura">
+
+                        <div class="mb-3">
+                            <label class="form-label">Total a Pagar</label>
+                            <div id="pagoCheckoutDescuentoClasificacion" style="display: none;"></div>
+                            <div class="alert alert-info mb-0">
+                                <strong id="pagoCheckoutTotal">$0.00</strong>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pagoCheckoutImporte" class="form-label">Importe a Pagar *</label>
+                            <input type="number" class="form-control" id="pagoCheckoutImporte" name="importe"
+                                step="0.01" min="0.01" required>
+                            <small class="text-muted">Ingrese el monto a registrar</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pagoCheckoutMetodo" class="form-label">Método de Pago *</label>
+                            <select class="form-select" id="pagoCheckoutMetodo" name="id_metodo_pago" required>
+                                <option value="">Cargando métodos...</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnRegistrarPagoCheckout"
+                        onclick="registrarPagoCheckout()">
+                        <i class="bi bi-credit-card"></i> Registrar Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

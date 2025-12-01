@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+
+{% block title %}Devoluciones - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/devoluciones.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-arrow-counterclockwise"></i> Gestión de Devoluciones
+                </h1>
+                <p class="text-muted">Administración y gestión de productos devueltos</p>
+            </div>
+            <a href="{{ url_for('admin_crear_devolucion') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Nueva Devolución
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="table-container">
+        {{ macros.tabla_devoluciones(devoluciones) }}
+    </div>
+</div>
+
+<!-- Modal para Cambiar Estado de Devolución -->
+<div class="modal fade" id="modalCambiarEstadoDevolucion" tabindex="-1" aria-labelledby="modalCambiarEstadoDevolucionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCambiarEstadoDevolucionLabel">
+                    <i class="bi bi-arrow-repeat"></i> Cambiar Estado de Devolución
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertCambiarEstadoContainer"></div>
+                <form id="formCambiarEstadoDevolucion">
+                    <input type="hidden" id="cambiarEstadoIdDevolucion" name="id_devolucion">
+                    <input type="hidden" id="cambiarEstadoActual" name="estado_actual">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">ID Devolución</label>
+                        <input type="text" class="form-control" id="cambiarEstadoIdDevolucionDisplay" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Estado Actual</label>
+                        <input type="text" class="form-control" id="cambiarEstadoActualDisplay" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="nuevoEstadoDevolucion" class="form-label">Nuevo Estado <span class="text-danger">*</span></label>
+                        <select class="form-select" id="nuevoEstadoDevolucion" name="nuevo_estado" required>
+                            <option value="">Seleccione un estado...</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Autorizado">Autorizado</option>
+                            <option value="Rechazado">Rechazado</option>
+                            <option value="Completado">Completado</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarCambiarEstadoDevolucion">
+                    <i class="bi bi-check-circle"></i> Confirmar Cambio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Detalles de la Devolución -->
+<div class="modal fade" id="modalVerDevolucion" tabindex="-1" aria-labelledby="modalVerDevolucionLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalVerDevolucionLabel">
+                    <i class="bi bi-eye"></i> Detalles de la Devolución
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalDevolucionBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando información de la devolución...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/devoluciones.js') }}"></script>
+{% endblock %}

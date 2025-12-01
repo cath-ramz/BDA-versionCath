@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Devolución - Panel de Inventario{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario_crear_devolucion.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-arrow-counterclockwise"></i> Crear Nueva Devolución
+        </h1>
+        <p class="text-muted">Complete el formulario para procesar una devolución</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-container">
+        <form id="formDevolucion">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="id_pedido" class="form-label required-field">Pedido</label>
+                    <select class="form-select" id="id_pedido" name="id_pedido" required>
+                        <option value="">Seleccione un pedido</option>
+                        {% for pedido in pedidos %}
+                        <option value="{{ pedido.id_pedido }}">Pedido #{{ pedido.id_pedido }} - {{ pedido.fecha_pedido
+                            }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="productosContainer" class="productos-list" style="display: none;">
+                <h5 class="mb-3">Productos del Pedido</h5>
+                <div id="productosList"></div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-3 mt-4 align-items-center">
+                <a href="{{ url_for('inventario_devoluciones') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" id="btnCrearDevolucion">
+                    <i class="bi bi-check-circle"></i> Crear Devolución
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Esperar a que el DOM esté completamente cargado
+    document.addEventListener('DOMContentLoaded', function () {
+        const idPedidoSelect = document.getElementById('id_pedido');
+        if (!idPedidoSelect) {
+            console.error('Campo id_pedido no encontrado');
+            return;
+        }
+
+        idPedidoSelect.addEventListener('change', function () {
+            const idPedido = this.value;
+            if (!idPedido) {
+                document.getElementById('productosContainer').style.display = 'none';
+                return;
+            }
+
+            // Mostrar mensaje de carga
+            document.getElementById('productosList').innerHTML = '<p class="text-muted">Cargando productos...</p>';
+            document.getElementById('productosContainer').style.display = 'block';
+
+            fetch(`/api/inventario/devoluciones/pedido/${idPedido}/productos`)
+                .then(r => {
+                    if (!r.ok) {
+                        throw new Error(`HTTP ${r.status}`);
+                    }
+                    return r.json();
+                })
+                .then(productos => {
+                    console.log('Productos recibidos:', productos);
+                    if (!productos || productos.length === 0) {
+                        document.getElementById('productosList').innerHTML = '<p class="text-muted">No hay productos en este pedido</p>';
+                        document.getElementById('productosContainer').style.display = 'block';
+                        return;
+                    }
+
+                    const container = document.getElementById('productosList');
+                    container.innerHTML = productos.map(p => `
+                    <div class="producto-item">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="prod_${p.id_pedido_detalle}" 
+                                   data-id-producto="${p.id_producto}"
+                                   data-id-pedido-detalle="${p.id_pedido_detalle}"
+                                   data-cantidad-max="${p.cantidad_producto}">
+                            <label class="form-check-label" for="prod_${p.id_pedido_detalle}">
+                                <strong>${p.nombre_producto}</strong> - SKU: ${p.sku} - Cantidad disponible: ${p.cantidad_producto}
+                            </label>
+                        </div>
+                        <div class="row mt-3" id="detalles_${p.id_pedido_detalle}" style="display: none;">
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Cantidad a devolver</label>
+                                <input type="number" class="form-control cantidad-input" 
+                                       data-id="${p.id_pedido_detalle}" 
+                                       min="1" max="${p.cantidad_producto}" 
+                                       value="1" required>
+                                <small class="text-muted">Máximo: ${p.cantidad_producto}</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Tipo de devolución</label>
+                                <select class="form-select tipo-devolucion" data-id="${p.id_pedido_detalle}" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for tipo in tipos_devolucion %}
+                                    <option value="{{ tipo.id_tipo_devoluciones }}">{{ tipo.tipo_devolucion }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Motivo</label>
+                                <select class="form-select motivo-devolucion" data-id="${p.id_pedido_detalle}" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for motivo in motivos_devolucion %}
+                                    <option value="{{ motivo }}">{{ motivo }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                    // Agregar event listeners a checkboxes
+                    productos.forEach(p => {
+                        const checkbox = document.getElementById(`prod_${p.id_pedido_detalle}`);
+                        checkbox.addEventListener('change', function () {
+                            const detalles = document.getElementById(`detalles_${p.id_pedido_detalle}`);
+                            detalles.style.display = this.checked ? 'block' : 'none';
+                        });
+                    });
+
+                    document.getElementById('productosContainer').style.display = 'block';
+                })
+                .catch(err => {
+                    console.error('Error cargando productos:', err);
+                    document.getElementById('productosList').innerHTML = `<p class="text-danger">Error al cargar productos: ${err.message}</p>`;
+                    document.getElementById('productosContainer').style.display = 'block';
+                });
+        });
+
+        // Configurar formulario
+        console.log('Configurando formulario...');
+        const form = document.getElementById('formDevolucion');
+        if (!form) {
+            console.error('Formulario no encontrado');
+            return;
+        }
+
+        console.log('Formulario encontrado, agregando event listener');
+
+        // Función para procesar el formulario
+        function procesarFormulario(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            console.log('=== INICIANDO PROCESAMIENTO DE DEVOLUCIÓN ===');
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('Formulario enviado - evento capturado');
+
+            const idPedido = document.getElementById('id_pedido').value;
+            if (!idPedido) {
+                alert('Debe seleccionar un pedido');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('input.form-check-input[type="checkbox"]:checked');
+            console.log('Checkboxes seleccionados:', checkboxes.length);
+
+            if (checkboxes.length === 0) {
+                alert('Debe seleccionar al menos un producto para devolver');
+                return;
+            }
+
+            const items = [];
+            let hayErrores = false;
+
+            checkboxes.forEach(cb => {
+                const idPedidoDetalle = cb.getAttribute('data-id-pedido-detalle');
+                const idProducto = cb.getAttribute('data-id-producto');
+                
+                if (!idPedidoDetalle || !idProducto) {
+                    console.error('Checkbox sin datos requeridos:', cb);
+                    hayErrores = true;
+                    return;
+                }
+                
+                const cantidadInput = document.querySelector(`.cantidad-input[data-id="${idPedidoDetalle}"]`);
+                const tipoSelect = document.querySelector(`.tipo-devolucion[data-id="${idPedidoDetalle}"]`);
+                const motivoSelect = document.querySelector(`.motivo-devolucion[data-id="${idPedidoDetalle}"]`);
+
+                const cantidad = cantidadInput ? parseInt(cantidadInput.value) : 0;
+                const tipo = tipoSelect ? tipoSelect.value : '';
+                const motivo = motivoSelect ? motivoSelect.value : '';
+
+                console.log(`Producto ${idProducto}: cantidad=${cantidad}, tipo=${tipo}, motivo=${motivo}`);
+
+                // Validar campos requeridos
+                if (!cantidad || cantidad <= 0) {
+                    const label = cb.closest('.form-check')?.querySelector('label')?.textContent || 'producto';
+                    alert(`La cantidad para ${label} es inválida`);
+                    hayErrores = true;
+                    return;
+                }
+                if (!tipo) {
+                    const label = cb.closest('.form-check')?.querySelector('label')?.textContent || 'producto';
+                    alert(`Debe seleccionar un tipo de devolución para ${label}`);
+                    hayErrores = true;
+                    return;
+                }
+                if (!motivo) {
+                    const label = cb.closest('.form-check')?.querySelector('label')?.textContent || 'producto';
+                    alert(`Debe seleccionar un motivo para ${label}`);
+                    hayErrores = true;
+                    return;
+                }
+
+                items.push({
+                    id_producto: parseInt(idProducto),
+                    cantidad: cantidad,
+                    id_tipo_devolucion: parseInt(tipo),
+                    motivo: motivo.trim()
+                });
+            });
+
+            if (hayErrores) {
+                console.error('Hay errores en la validación');
+                return;
+            }
+            
+            if (items.length === 0) {
+                console.error('No hay items para enviar');
+                alert('No se encontraron productos válidos para devolver');
+                return;
+            }
+
+            console.log('Datos a enviar:', { id_pedido: parseInt(idPedido), items: items });
+
+            // Deshabilitar botón mientras se procesa
+            const btnSubmit = document.getElementById('btnCrearDevolucion');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
+            }
+
+            fetch('/api/inventario/devoluciones/crear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_pedido: parseInt(idPedido), items: items })
+            })
+                .then(r => {
+                    console.log('Respuesta recibida, status:', r.status);
+                    return r.json().then(data => {
+                        if (!r.ok) {
+                            // Si hay un error, lanzar con el mensaje del servidor
+                            const errorMsg = data.mensaje || data.error || `HTTP ${r.status}`;
+                            console.error('Error del servidor:', data);
+                            throw new Error(errorMsg);
+                        }
+                        return data;
+                    });
+                })
+                .then(data => {
+                    console.log('Datos recibidos:', data);
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="bi bi-check-circle"></i> Crear Devolución';
+                    }
+
+                    // Verificar si la devolución se creó exitosamente
+                    // El endpoint puede retornar success o id_devolucion
+                    if (data.success || data.id_devolucion) {
+                        alert('Devolución creada exitosamente');
+                        setTimeout(() => {
+                            window.location.href = '/inventario/devoluciones';
+                        }, 500);
+                    } else {
+                        const errorMsg = data.mensaje || data.error || 'Error al crear la devolución';
+                        console.error('Error en respuesta:', data);
+                        alert('Error: ' + errorMsg);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error completo:', err);
+                    console.error('Stack trace:', err.stack);
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="bi bi-check-circle"></i> Crear Devolución';
+                    }
+                    const errorMsg = err.message || 'Error desconocido al crear la devolución';
+                    alert('Error: ' + errorMsg);
+                });
+        }
+        
+        // Agregar event listener al formulario
+        form.addEventListener('submit', procesarFormulario);
+        
+        // También agregar event listener al botón directamente como fallback
+        const btnCrear = document.getElementById('btnCrearDevolucion');
+        if (btnCrear) {
+            console.log('Botón encontrado, agregando event listener directo');
+            btnCrear.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Botón clickeado directamente - llamando procesarFormulario');
+                procesarFormulario(e);
+            });
+        } else {
+            console.error('Botón btnCrearDevolucion no encontrado');
+        }
+    });
+</script>
+{% endblock %}

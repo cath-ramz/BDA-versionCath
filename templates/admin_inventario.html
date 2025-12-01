@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_inventario %}
+
+{% block title %}Gestión de Inventario - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_inventario.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-box-seam"></i> Gestión de Inventario
+                </h1>
+                <p class="text-muted">Vista administrativa del inventario y stock de productos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="filters-container">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="searchInput" class="form-label">Buscar producto</label>
+                <input type="text" class="form-control" id="searchInput"
+                    placeholder="Buscar por nombre, SKU o categoría...">
+            </div>
+
+            <div class="col-md-3">
+                <label for="filterCategoria" class="form-label">Categoría</label>
+                <select class="form-select" id="filterCategoria">
+                    <option value="">Todas las categorías</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="filterSucursal" class="form-label">Sucursal</label>
+                <select class="form-select" id="filterSucursal">
+                    <option value="">Todas las sucursales</option>
+                    {% for sucursal in sucursales %}
+                    <option value="{{ sucursal.id_sucursal }}">{{ sucursal.nombre_sucursal }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="filterEstadoStock" class="form-label">Estado de Stock</label>
+                <select class="form-select" id="filterEstadoStock">
+                    <option value="">Todos</option>
+                    <option value="bajo">Bajo</option>
+                    <option value="normal">Normal</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-md-2 ms-auto">
+                <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                    <i class="bi bi-x-circle"></i> Limpiar Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        {{ tabla_inventario(productos) }}
+    </div>
+</div>
+
+<!-- Modal para Ajustar Inventario -->
+<div class="modal fade" id="modalAjusteInventario" tabindex="-1" aria-labelledby="modalAjusteInventarioLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAjusteInventarioLabel">
+                    <i class="bi bi-box-seam"></i> Ajustar Inventario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertAjusteContainer"></div>
+                <form id="formAjusteInventario">
+                    <input type="hidden" id="ajusteSku" name="sku">
+
+                    <div class="mb-3">
+                        <label class="form-label">Producto</label>
+                        <input type="text" class="form-control" id="ajusteNombreProducto" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">SKU <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="ajusteSkuDisplay" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Sucursal <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="ajusteSucursal" name="nombre_sucursal" readonly 
+                               value="{% if sucursal_usuario %}{{ sucursal_usuario }}{% elif sucursales %}{{ sucursales[0].nombre_sucursal }}{% endif %}">
+                        <input type="hidden" id="ajusteSucursalHidden" name="nombre_sucursal" 
+                               value="{% if sucursal_usuario %}{{ sucursal_usuario }}{% elif sucursales %}{{ sucursales[0].nombre_sucursal }}{% endif %}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Cambio <span class="text-danger">*</span></label>
+                        <select class="form-select" id="ajusteTipoCambio" name="tipo_cambio" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Entrada">Entrada</option>
+                            <option value="Salida">Salida</option>
+                            <option value="Ajuste">Ajuste</option>
+                        </select>
+                        <small class="text-muted">
+                            <strong>Entrada:</strong> Agregar stock |
+                            <strong>Salida:</strong> Reducir stock |
+                            <strong>Ajuste:</strong> Establecer cantidad exacta
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="ajusteCantidad" name="cantidad" min="0" required>
+                        <small class="text-muted">Para Entrada/Salida: cantidad positiva. Para Ajuste: cantidad exacta
+                            (puede ser 0).</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Motivo <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="ajusteMotivo" name="motivo" rows="3" maxlength="200" required
+                            placeholder="Describa el motivo del ajuste..."></textarea>
+                        <small class="text-muted">Máximo 200 caracteres</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarAjuste">
+                    <i class="bi bi-check-circle"></i> Guardar Ajuste
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin_inventario.js') }}"></script>
+{% endblock %}

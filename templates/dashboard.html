@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Catálogo de Joyas Exclusivas</h1>
+        <p class="dashboard-subtitle">Descubre nuestra colección de joyas premium</p>
+
+        <div class="search-container">
+            <div class="search-input">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" placeholder="Buscar productos..." id="searchInput">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-cards" id="kpiCards">
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div>
+                <div class="kpi-label">Ventas Totales</div>
+                <div class="kpi-value" id="kpiVentas">$0</div>
+            </div>
+            <div class="kpi-icon ventas">💰</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div>
+                <div class="kpi-label">Productos Activos</div>
+                <div class="kpi-value" id="kpiProductos">0</div>
+            </div>
+            <div class="kpi-icon productos">📦</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div>
+                <div class="kpi-label">Pedidos (30 días)</div>
+                <div class="kpi-value" id="kpiPedidos">0</div>
+            </div>
+            <div class="kpi-icon pedidos">🛒</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <div>
+                <div class="kpi-label">Total Clientes</div>
+                <div class="kpi-value" id="kpiClientes">0</div>
+            </div>
+            <div class="kpi-icon clientes">👥</div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficas -->
+<div class="chart-section">
+    <div class="row">
+        <!-- Top Productos (Bar Chart) -->
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h3 class="chart-title">Top 10 Productos Más Vendidos</h3>
+                <div id="chartTopProductos" class="chart-container"></div>
+            </div>
+        </div>
+
+        <!-- Facturación Diaria (Line Chart) -->
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h3 class="chart-title">Facturación Diaria (Últimos 7 días)</h3>
+                <div id="chartFacturacion" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Margen por Categoría (Column Chart) -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="chart-card">
+                <h3 class="chart-title">Margen por Categoría</h3>
+                <div id="chartMargenCategoria" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

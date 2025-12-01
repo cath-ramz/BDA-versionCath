@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes de Sucursal - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+<style>
+    .reportes-container {
+        padding: 2rem 0;
+    }
+    
+    .report-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .report-section h2 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3498db;
+    }
+    
+    .report-section h3 {
+        color: #34495e;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+    }
+    
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .kpi-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .kpi-box.ventas {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .kpi-box.inventario {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .kpi-box.productos {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    
+    .kpi-box.stock {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .kpi-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-subtitle {
+        font-size: 0.8rem;
+        opacity: 0.8;
+    }
+    
+    .chart-container {
+        min-height: 400px;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-controls {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .table-report {
+        margin-top: 1rem;
+    }
+    
+    .table-report th {
+        background: #34495e;
+        color: white;
+    }
+    
+    .badge-custom {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    .sucursal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-graph-up-arrow"></i> Reportes de Sucursal
+                </h1>
+                <p class="text-muted">Análisis detallado de ventas e inventario de tu sucursal</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid reportes-container">
+    {% if nombre_sucursal %}
+    <div class="sucursal-header">
+        <h3><i class="bi bi-shop"></i> {{ nombre_sucursal }}</h3>
+    </div>
+    {% endif %}
+
+    {% if not id_sucursal %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No se encontró una sucursal asignada. Por favor, contacta al administrador.
+    </div>
+    {% else %}
+    
+    <!-- KPIs Resumen -->
+    <div class="report-section">
+        <h2><i class="bi bi-speedometer2"></i> Resumen Ejecutivo</h2>
+        <div class="filter-controls">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Desde</label>
+                    <input type="date" class="form-control" id="fechaDesde" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" class="form-control" id="fechaHasta" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-primary w-100" onclick="cargarResumen()">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="kpi-grid" id="kpiResumen">
+            <div class="kpi-box ventas">
+                <div class="kpi-label">Ingresos Totales</div>
+                <div class="kpi-value" id="kpiIngresosTotales">$0</div>
+                <div class="kpi-subtitle" id="kpiIngresosSubtitle">En el período seleccionado</div>
+            </div>
+            <div class="kpi-box productos">
+                <div class="kpi-label">Total Pedidos</div>
+                <div class="kpi-value" id="kpiTotalPedidos">0</div>
+                <div class="kpi-subtitle" id="kpiPedidosSubtitle">Pedidos completados</div>
+            </div>
+            <div class="kpi-box inventario">
+                <div class="kpi-label">Ticket Promedio</div>
+                <div class="kpi-value" id="kpiTicketPromedio">$0</div>
+                <div class="kpi-subtitle">Por pedido</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Inventario -->
+    <div class="report-section">
+        <h2><i class="bi bi-box-seam"></i> Resumen de Inventario</h2>
+        <div class="kpi-grid" id="kpiInventario">
+            <div class="kpi-box inventario">
+                <div class="kpi-label">Total Productos</div>
+                <div class="kpi-value" id="kpiTotalProductos">0</div>
+                <div class="kpi-subtitle">Productos únicos</div>
+            </div>
+            <div class="kpi-box productos">
+                <div class="kpi-label">Total Piezas</div>
+                <div class="kpi-value" id="kpiTotalPiezas">0</div>
+                <div class="kpi-subtitle">Piezas en stock</div>
+            </div>
+            <div class="kpi-box stock">
+                <div class="kpi-label">Productos con Stock Bajo</div>
+                <div class="kpi-value" id="kpiStockBajo">0</div>
+                <div class="kpi-subtitle">Requieren atención</div>
+            </div>
+            <div class="kpi-box inventario">
+                <div class="kpi-label">Valor Total Inventario</div>
+                <div class="kpi-value" id="kpiValorInventario">$0</div>
+                <div class="kpi-subtitle">Valor en costo</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Productos -->
+    <div class="report-section">
+        <h2><i class="bi bi-trophy"></i> Productos Más Vendidos</h2>
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <select id="topNProductos" class="form-select">
+                    <option value="5" selected>Top 5</option>
+                    <option value="10">Top 10</option>
+                    <option value="20">Top 20</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-primary" onclick="cargarTopProductos()">
+                    <i class="bi bi-arrow-clockwise"></i> Actualizar
+                </button>
+            </div>
+        </div>
+        <div id="chartTopProductos" class="chart-container"></div>
+        <div id="tablaTopProductos" class="table-responsive mt-3"></div>
+    </div>
+
+    <!-- Stock Bajo -->
+    <div class="report-section">
+        <h2><i class="bi bi-exclamation-triangle"></i> Productos con Stock Bajo</h2>
+        <div id="tablaStockBajo" class="table-responsive"></div>
+    </div>
+
+    <!-- Inventario Completo -->
+    <div class="report-section">
+        <h2><i class="bi bi-list-check"></i> Inventario Completo</h2>
+        <div class="mb-3">
+            <input type="text" class="form-control" id="buscarInventario" placeholder="Buscar producto por nombre o SKU...">
+        </div>
+        <div id="tablaInventario" class="table-responsive"></div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+<script>
+const ID_SUCURSAL = {{ id_sucursal|tojson if id_sucursal else 'null' }};
+const NOMBRE_SUCURSAL = {{ nombre_sucursal|tojson if nombre_sucursal else 'null' }};
+
+// Establecer fechas por defecto (últimos 30 días)
+document.addEventListener('DOMContentLoaded', function() {
+    const hoy = new Date();
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hoy.getDate() - 30);
+    
+    document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+    document.getElementById('fechaDesde').value = hace30Dias.toISOString().split('T')[0];
+    
+    if (ID_SUCURSAL) {
+        cargarResumen();
+        cargarKPIsInventario();
+        cargarTopProductos();
+        cargarStockBajo();
+        cargarInventario();
+    }
+});
+
+function cargarResumen() {
+    const desde = document.getElementById('fechaDesde').value;
+    const hasta = document.getElementById('fechaHasta').value;
+    
+    console.log('[DEBUG] cargarResumen - ID_SUCURSAL:', ID_SUCURSAL);
+    console.log('[DEBUG] cargarResumen - Fechas:', desde, hasta);
+    
+    if (!ID_SUCURSAL) {
+        console.error('[ERROR] No hay ID_SUCURSAL disponible');
+        alert('Error: No se pudo obtener la sucursal asignada. Por favor, contacta al administrador.');
+        return;
+    }
+    
+    fetch(`/api/gestor/resumen-sucursal?desde=${desde}&hasta=${hasta}`)
+        .then(r => {
+            console.log('[DEBUG] Response status:', r.status);
+            if (!r.ok) {
+                return r.json().then(data => {
+                    console.error('[ERROR] API Error:', data);
+                    throw new Error(data.error || 'Error al cargar datos');
+                });
+            }
+            return r.json();
+        })
+        .then(data => {
+            console.log('[DEBUG] Datos recibidos:', data);
+            if (data.error) {
+                console.error('Error:', data.error);
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            document.getElementById('kpiIngresosTotales').textContent = 
+                '$' + new Intl.NumberFormat('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(data.ingresos_totales || 0);
+            document.getElementById('kpiTotalPedidos').textContent = 
+                new Intl.NumberFormat('es-MX').format(data.total_pedidos || 0);
+            document.getElementById('kpiTicketPromedio').textContent = 
+                '$' + new Intl.NumberFormat('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(data.ticket_promedio || 0);
+            document.getElementById('kpiIngresosSubtitle').textContent = 
+                `${desde} al ${hasta}`;
+        })
+        .catch(err => {
+            console.error('Error cargando resumen:', err);
+            alert('Error al cargar el resumen: ' + err.message);
+        });
+}
+
+function cargarKPIsInventario() {
+    console.log('[DEBUG] cargarKPIsInventario - ID_SUCURSAL:', ID_SUCURSAL);
+    
+    if (!ID_SUCURSAL) {
+        console.error('[ERROR] No hay ID_SUCURSAL disponible');
+        return;
+    }
+    
+    fetch('/api/gestor/kpis-inventario')
+        .then(r => {
+            console.log('[DEBUG] KPIs Response status:', r.status);
+            if (!r.ok) {
+                return r.json().then(data => {
+                    console.error('[ERROR] API Error:', data);
+                    throw new Error(data.error || 'Error al cargar KPIs');
+                });
+            }
+            return r.json();
+        })
+        .then(data => {
+            console.log('[DEBUG] KPIs datos recibidos:', data);
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+            
+            document.getElementById('kpiTotalProductos').textContent = 
+                new Intl.NumberFormat('es-MX').format(data.total_productos || 0);
+            document.getElementById('kpiTotalPiezas').textContent = 
+                new Intl.NumberFormat('es-MX').format(data.total_piezas || 0);
+            document.getElementById('kpiStockBajo').textContent = 
+                new Intl.NumberFormat('es-MX').format(data.productos_stock_bajo || 0);
+            document.getElementById('kpiValorInventario').textContent = 
+                '$' + new Intl.NumberFormat('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(data.valor_total_inventario || 0);
+        })
+        .catch(err => {
+            console.error('Error cargando KPIs inventario:', err);
+            alert('Error al cargar KPIs de inventario: ' + err.message);
+        });
+}
+
+function cargarTopProductos() {
+    const desde = document.getElementById('fechaDesde').value;
+    const hasta = document.getElementById('fechaHasta').value;
+    const limit = document.getElementById('topNProductos').value;
+    
+    fetch(`/api/gestor/top-productos?desde=${desde}&hasta=${hasta}&limit=${limit}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+            
+            // Gráfica
+            Highcharts.chart('chartTopProductos', {
+                chart: { type: 'bar', backgroundColor: 'transparent' },
+                title: { text: 'Productos Más Vendidos' },
+                xAxis: { categories: data.map(p => p.Nombre_Modelo || p.nombre_producto) },
+                yAxis: { title: { text: 'Unidades Vendidas' } },
+                series: [{
+                    name: 'Unidades Vendidas',
+                    data: data.map(p => p.Unidades_Vendidas || 0),
+                    color: '#667eea'
+                }],
+                credits: { enabled: false }
+            });
+            
+            // Tabla
+            let html = '<table class="table table-striped table-hover table-report"><thead><tr><th>SKU</th><th>Producto</th><th>Unidades Vendidas</th><th>Ingreso Total</th></tr></thead><tbody>';
+            data.forEach(p => {
+                html += `<tr>
+                    <td><code>${p.SKU_Producto || p.sku}</code></td>
+                    <td>${p.Nombre_Modelo || p.nombre_producto}</td>
+                    <td><strong>${p.Unidades_Vendidas || 0}</strong></td>
+                    <td>$${new Intl.NumberFormat('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(p.Ingreso_Total_Generado || 0)}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('tablaTopProductos').innerHTML = html;
+        })
+        .catch(err => console.error('Error cargando top productos:', err));
+}
+
+function cargarStockBajo() {
+    fetch('/api/gestor/stock-bajo')
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+            
+            if (data.length === 0) {
+                document.getElementById('tablaStockBajo').innerHTML = 
+                    '<div class="alert alert-success"><i class="bi bi-check-circle"></i> No hay productos con stock bajo.</div>';
+                return;
+            }
+            
+            let html = '<table class="table table-striped table-hover table-report"><thead><tr><th>SKU</th><th>Producto</th><th>Stock Actual</th><th>Stock Ideal</th><th>Unidades Faltantes</th></tr></thead><tbody>';
+            data.forEach(p => {
+                html += `<tr>
+                    <td><code>${p.sku}</code></td>
+                    <td>${p.nombre_producto}</td>
+                    <td><strong>${p.stock_actual || 0}</strong></td>
+                    <td>${p.stock_ideal || 0}</td>
+                    <td><span class="badge bg-warning">${p.unidades_faltantes || 0}</span></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('tablaStockBajo').innerHTML = html;
+        })
+        .catch(err => console.error('Error cargando stock bajo:', err));
+}
+
+function cargarInventario() {
+    fetch('/api/gestor/inventario')
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+            
+            if (data.length === 0) {
+                document.getElementById('tablaInventario').innerHTML = 
+                    '<div class="alert alert-info"><i class="bi bi-info-circle"></i> No hay productos en el inventario.</div>';
+                return;
+            }
+            
+            let html = '<table class="table table-striped table-hover table-report"><thead><tr><th>SKU</th><th>Producto</th><th>Categoría</th><th>Stock Actual</th><th>Stock Ideal</th><th>Estado</th><th>Valor Inventario</th></tr></thead><tbody>';
+            data.forEach(p => {
+                const estadoBadge = p.estado_stock === 'Bajo' 
+                    ? '<span class="badge bg-warning">Bajo</span>' 
+                    : '<span class="badge bg-success">Normal</span>';
+                
+                html += `<tr>
+                    <td><code>${p.sku}</code></td>
+                    <td>${p.nombre_producto}</td>
+                    <td>${p.nombre_categoria}</td>
+                    <td><strong>${p.stock_actual || 0}</strong></td>
+                    <td>${p.stock_ideal || 0}</td>
+                    <td>${estadoBadge}</td>
+                    <td>$${new Intl.NumberFormat('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(p.valor_inventario || 0)}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('tablaInventario').innerHTML = html;
+        })
+        .catch(err => console.error('Error cargando inventario:', err));
+}
+
+// Búsqueda en inventario
+document.getElementById('buscarInventario')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#tablaInventario tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
+

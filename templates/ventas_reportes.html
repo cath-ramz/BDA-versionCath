@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - Ventas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_reportes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-bar-chart"></i> Reportes de Ventas
+        </h1>
+        <p class="text-muted">Análisis y estadísticas de ventas</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- KPIs Resumen -->
+    <div class="kpi-grid" id="kpiResumen">
+        <div class="kpi-item">
+            <div class="kpi-item-icon">💰</div>
+            <div class="kpi-item-value" id="kpiVentasMes">$0</div>
+            <div class="kpi-item-label">Ventas del Mes</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-item-icon">📦</div>
+            <div class="kpi-item-value" id="kpiPedidosMes">0</div>
+            <div class="kpi-item-label">Pedidos del Mes</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-item-icon">🎫</div>
+            <div class="kpi-item-value" id="kpiTicketPromedio">$0</div>
+            <div class="kpi-item-label">Ticket Promedio</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-item-icon">👥</div>
+            <div class="kpi-item-value" id="kpiClientesRecurrentes">0</div>
+            <div class="kpi-item-label">Clientes Recurrentes</div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="report-card">
+                <h3 class="report-card-title">
+                    <i class="bi bi-graph-up"></i> Ventas Semanales
+                </h3>
+                <div id="chartVentasSemanal" class="chart-container"></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="report-card">
+                <h3 class="report-card-title">
+                    <i class="bi bi-trophy"></i> Top 5 Productos
+                </h3>
+                <div id="chartTopProductos" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="report-card">
+                <h3 class="report-card-title">
+                    <i class="bi bi-pie-chart"></i> Ventas por Categoría
+                </h3>
+                <div id="chartVentasCategoria" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="{{ url_for('static', filename='js/ventas_reportes.js') }}"></script>
+{% endblock %}

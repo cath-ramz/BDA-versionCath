@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Inventario - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Panel de Inventario</h1>
+        <p class="dashboard-subtitle">Gestión y control de inventario</p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="container">
+    <div class="kpi-cards" id="kpiCards">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Productos en Stock</div>
+                    <div class="kpi-value" id="kpiStock">0</div>
+                    <div class="kpi-trend positive" id="kpiStockTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon stock">📦</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Stock Bajo</div>
+                    <div class="kpi-value" id="kpiStockBajo">0</div>
+                    <div class="kpi-trend positive" id="kpiStockBajoTrend">
+                        <span>-0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon bajo">⚠️</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Valor Inventario</div>
+                    <div class="kpi-value" id="kpiValor">$0</div>
+                    <div class="kpi-trend positive" id="kpiValorTrend">
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon valor">💎</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Rotación Promedio</div>
+                    <div class="kpi-value" id="kpiRotacion">0</div>
+                    <div class="kpi-trend positive" id="kpiRotacionTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon rotacion">🔄</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Estado de Stock -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Estado de Stock</h3>
+                    <div id="chartEstadoStock" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="{{ url_for('static', filename='js/inventario_dashboard.js') }}"></script>
+{% endblock %}

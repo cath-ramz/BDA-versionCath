@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_inventario %}
+
+{% block title %}Inventario - Panel de Auditoría{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auditor_inventario.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-box-seam"></i> Inventario
+                </h1>
+                <p class="text-muted">Vista de solo lectura - Sin permisos de modificación</p>
+            </div>
+            <div>
+                <span class="info-badge">
+                    <i class="bi bi-info-circle"></i> Modo Auditoría - Solo Visualización
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="filters-container">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="searchInput" class="form-label">Buscar producto</label>
+                <input type="text" class="form-control" id="searchInput"
+                    placeholder="Buscar por nombre, SKU o categoría...">
+            </div>
+            <div class="col-md-3">
+                <label for="filterCategoria" class="form-label">Categoría</label>
+                <select class="form-select" id="filterCategoria">
+                    <option value="">Todas las categorías</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filterEstadoStock" class="form-label">Estado de Stock</label>
+                <select class="form-select" id="filterEstadoStock">
+                    <option value="">Todos</option>
+                    <option value="bajo">Bajo</option>
+                    <option value="normal">Normal</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        {{ tabla_inventario(productos, solo_lectura=true) }}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auditor_inventario.js') }}"></script>
+{% endblock %}

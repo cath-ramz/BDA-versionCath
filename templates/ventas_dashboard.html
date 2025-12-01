@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Ventas - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Panel de Ventas</h1>
+        <p class="dashboard-subtitle">Resumen de tu desempeño de ventas</p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="container">
+    <div class="kpi-cards" id="kpiCards">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Ventas Hoy</div>
+                    <div class="kpi-value" id="kpiVentasHoy">$0</div>
+                    <div class="kpi-trend positive" id="kpiVentasTrend">
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon ventas">💰</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Comisión Acumulada</div>
+                    <div class="kpi-value" id="kpiComision">$0</div>
+                    <div class="kpi-trend positive" id="kpiComisionTrend">
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon comision">💵</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Clientes Recurrentes</div>
+                    <div class="kpi-value" id="kpiClientes">0</div>
+                    <div class="kpi-trend positive" id="kpiClientesTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon clientes">👥</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Pedidos Pendientes</div>
+                    <div class="kpi-value" id="kpiPedidos">0</div>
+                    <div class="kpi-trend positive" id="kpiPedidosTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon pedidos">📦</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Top Productos Vendidos Este Mes -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="chart-title mb-0">🏆 Top 5 Productos Vendidos Este Mes</h3>
+                    </div>
+                    <div id="topProductosList" style="padding: 4px;">
+                        <p class="text-center text-muted">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ventas vs Meta Semanal -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Ventas vs Meta Semanal</h3>
+                    <div id="chartVentasSemanal" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <!-- Ticket Promedio - KPI Cards y Gráfica -->
+            <div class="col-md-12">
+                <div class="chart-card">
+                    <h3 class="chart-title mb-4">Análisis de Ticket Promedio</h3>
+
+                    <!-- KPI Cards -->
+                    <div class="row mb-4" id="ticketPromedioKPIs">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-receipt-cutoff" style="font-size: 2rem; color: #8b5cf6;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-1">Ticket Promedio</h5>
+                                    <h3 class="mb-0" id="kpiTicketPromedio">$0</h3>
+                                    <small class="text-muted">Por pedido</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-cart-check" style="font-size: 2rem; color: #3b82f6;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-1">Total Pedidos</h5>
+                                    <h3 class="mb-0" id="kpiTotalPedidos">0</h3>
+                                    <small class="text-muted">Pedidos realizados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-currency-dollar" style="font-size: 2rem; color: #10b981;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-1">Ingresos Totales</h5>
+                                    <h3 class="mb-0" id="kpiIngresosTotales">$0</h3>
+                                    <small class="text-muted">Ingresos acumulados</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfica Visual -->
+                    <div id="chartTicketPromedio" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secciones Adicionales -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Progreso de Metas Mensuales -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="bi bi-bullseye me-2"></i>Progreso de Metas Mensuales
+                    </h3>
+                    <div id="progresoMetas" class="chart-container"
+                        style="min-height: 300px; max-height: 400px; overflow-y: auto;">
+                        <p class="text-center text-muted">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pedidos Pendientes de Seguimiento -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="bi bi-clock me-2"></i>Pedidos Pendientes de Seguimiento
+                    </h3>
+                    <div id="pedidosPendientes" class="chart-container"
+                        style="min-height: 300px; max-height: 400px; overflow-y: auto;">
+                        <p class="text-center text-muted">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="{{ url_for('static', filename='js/ventas_dashboard.js') }}"></script>
+{% endblock %}

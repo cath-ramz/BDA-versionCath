@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Asignar Producto a Sucursal - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .card-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-link-45deg"></i> Asignar Producto a Sucursal
+                </h1>
+                <p class="text-muted">Asigna productos a sucursales y define sus niveles de stock</p>
+            </div>
+            <a href="{{ url_for('admin_sucursales') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a Sucursales
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card-container">
+        <form id="formAsignarProducto">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="selectSucursal" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                    <select class="form-select" id="selectSucursal" required>
+                        <option value="">Selecciona una sucursal</option>
+                        {% for sucursal in sucursales %}
+                            <option value="{{ sucursal.id_sucursal }}">{{ sucursal.nombre_sucursal }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="selectProducto" class="form-label">Producto <span class="text-danger">*</span></label>
+                    <select class="form-select" id="selectProducto" required>
+                        <option value="">Selecciona un producto</option>
+                        {% for producto in productos %}
+                            <option value="{{ producto.id_producto }}">{{ producto.nombre_producto }} ({{ producto.sku }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="stockIdeal" class="form-label">Stock Ideal <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="stockIdeal" min="0" value="0" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="stockActual" class="form-label">Stock Actual</label>
+                    <input type="number" class="form-control" id="stockActual" min="0" value="0">
+                </div>
+                <div class="col-md-4">
+                    <label for="stockMaximo" class="form-label">Stock Máximo <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="stockMaximo" min="0" value="0" required>
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" id="btnAsignarProducto" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Asignar Producto
+                    </button>
+                    <a href="{{ url_for('admin_sucursales') }}" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formAsignarProducto');
+    const btnAsignar = document.getElementById('btnAsignarProducto');
+    
+    if (!form || !btnAsignar) {
+        console.error('No se encontraron los elementos del formulario');
+        return;
+    }
+    
+    // Asignar producto a sucursal
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Validar formulario HTML5
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        const data = {
+            id_sucursal: parseInt(document.getElementById('selectSucursal').value),
+            id_producto: parseInt(document.getElementById('selectProducto').value),
+            stock_ideal: parseInt(document.getElementById('stockIdeal').value),
+            stock_actual: parseInt(document.getElementById('stockActual').value) || 0,
+            stock_maximo: parseInt(document.getElementById('stockMaximo').value)
+        };
+        
+        // Validar que stock_maximo >= stock_ideal
+        if (data.stock_maximo < data.stock_ideal) {
+            alert('El stock máximo debe ser mayor o igual al stock ideal');
+            return;
+        }
+        
+        // Validar que stock_actual <= stock_maximo
+        if (data.stock_actual > data.stock_maximo) {
+            alert('El stock actual no puede exceder el stock máximo');
+            return;
+        }
+        
+        // Deshabilitar botón y mostrar estado de carga
+        const btnOriginalHTML = btnAsignar.innerHTML;
+        btnAsignar.disabled = true;
+        btnAsignar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enviando...';
+        
+        try {
+            const response = await fetch('/api/admin/sucursales/producto/asignar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            // Verificar si la respuesta es OK
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            // Intentar parsear JSON
+            let result;
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                console.error('Error parseando JSON:', jsonError);
+                throw new Error('Error al procesar la respuesta del servidor');
+            }
+            
+            // Restablecer botón
+            btnAsignar.disabled = false;
+            btnAsignar.innerHTML = btnOriginalHTML;
+            
+            if (result.success) {
+                alert(result.mensaje || 'Producto asignado exitosamente');
+                // Limpiar formulario
+                form.reset();
+                // Opcional: redirigir a la lista de sucursales después de 1 segundo
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("admin_sucursales") }}';
+                }, 1000);
+            } else {
+                alert('Error: ' + (result.mensaje || result.error || 'No se pudo asignar el producto'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            
+            // Restablecer botón en caso de error
+            btnAsignar.disabled = false;
+            btnAsignar.innerHTML = btnOriginalHTML;
+            
+            alert('Error al asignar el producto: ' + error.message);
+        }
+    });
+});
+</script>
+{% endblock %}
+

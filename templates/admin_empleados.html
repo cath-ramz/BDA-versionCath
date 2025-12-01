@@ -1,0 +1,302 @@
+
+{% extends "base.html" %}
+
+{% block title %}Empleados - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+        padding: 12px;
+    }
+
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    .filters-container {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para obtener el color del rol
+function getRolColor(rol) {
+    const colores = {
+        'Vendedor': 'bg-primary',
+        'Gestor de Sucursal': 'bg-info',
+        'Analista Financiero': 'bg-warning',
+        'Auditor': 'bg-danger',
+        'Inventarios': 'bg-success',
+        'Admin': 'bg-dark'
+    };
+    return colores[rol] || 'bg-secondary';
+}
+
+// Aplicar colores a los badges de rol
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-rol-badge]').forEach(badge => {
+        const rol = badge.getAttribute('data-rol-badge');
+        badge.className = 'badge ' + getRolColor(rol);
+    });
+    
+    // Obtener valores únicos de sucursales para el filtro
+    const sucursales = new Set();
+    document.querySelectorAll('[data-sucursal]').forEach(row => {
+        const sucursal = row.getAttribute('data-sucursal');
+        if (sucursal && sucursal.trim() !== '') {
+            sucursales.add(sucursal);
+        }
+    });
+    
+    const selectSucursal = document.getElementById('filtroSucursal');
+    // Limpiar opciones existentes excepto "Todas"
+    while (selectSucursal.children.length > 1) {
+        selectSucursal.removeChild(selectSucursal.lastChild);
+    }
+    
+    // Agregar opciones únicas
+    Array.from(sucursales).sort().forEach(sucursal => {
+        const option = document.createElement('option');
+        option.value = sucursal;
+        option.textContent = sucursal;
+        selectSucursal.appendChild(option);
+    });
+});
+
+// Función de filtrado y ordenamiento
+function aplicarFiltrosYOrden() {
+    const filtroRol = document.getElementById('filtroRol').value.toLowerCase();
+    const filtroSucursal = document.getElementById('filtroSucursal').value;
+    const ordenarPor = document.getElementById('ordenarPor').value;
+    
+    const filas = Array.from(document.querySelectorAll('#tbodyEmpleados tr'));
+    
+    // Filtrar
+    let filasFiltradas = filas.filter(fila => {
+        if (fila.querySelector('td[colspan]')) return true; // Mantener fila de "No hay empleados"
+        
+        const rol = fila.getAttribute('data-rol') || '';
+        const sucursal = fila.getAttribute('data-sucursal') || '';
+        
+        const coincideRol = !filtroRol || rol.toLowerCase() === filtroRol;
+        const coincideSucursal = !filtroSucursal || sucursal === filtroSucursal;
+        
+        return coincideRol && coincideSucursal;
+    });
+    
+    // Ordenar
+    if (filasFiltradas.length > 0 && !filasFiltradas[0].querySelector('td[colspan]')) {
+        filasFiltradas.sort((a, b) => {
+            if (ordenarPor === 'nombre') {
+                const nombreA = (a.getAttribute('data-nombre') || '').toLowerCase();
+                const nombreB = (b.getAttribute('data-nombre') || '').toLowerCase();
+                return nombreA.localeCompare(nombreB);
+            } else if (ordenarPor === 'nombre-desc') {
+                const nombreA = (a.getAttribute('data-nombre') || '').toLowerCase();
+                const nombreB = (b.getAttribute('data-nombre') || '').toLowerCase();
+                return nombreB.localeCompare(nombreA);
+            } else if (ordenarPor === 'rol') {
+                const rolA = (a.getAttribute('data-rol') || '').toLowerCase();
+                const rolB = (b.getAttribute('data-rol') || '').toLowerCase();
+                return rolA.localeCompare(rolB);
+            } else if (ordenarPor === 'sucursal') {
+                const sucursalA = (a.getAttribute('data-sucursal') || '').toLowerCase();
+                const sucursalB = (b.getAttribute('data-sucursal') || '').toLowerCase();
+                return sucursalA.localeCompare(sucursalB);
+            } else if (ordenarPor === 'fecha') {
+                const fechaA = a.getAttribute('data-fecha') || '0000-00-00';
+                const fechaB = b.getAttribute('data-fecha') || '0000-00-00';
+                return fechaB.localeCompare(fechaA); // Más reciente primero
+            } else if (ordenarPor === 'fecha-desc') {
+                const fechaA = a.getAttribute('data-fecha') || '0000-00-00';
+                const fechaB = b.getAttribute('data-fecha') || '0000-00-00';
+                return fechaA.localeCompare(fechaB); // Más antigua primero
+            }
+            return 0;
+        });
+    }
+    
+    // Mostrar/ocultar filas
+    const tbody = document.getElementById('tbodyEmpleados');
+    tbody.innerHTML = '';
+    
+    if (filasFiltradas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="bi bi-inbox"></i> No se encontraron empleados con los filtros seleccionados</td></tr>';
+    } else {
+        filasFiltradas.forEach(fila => tbody.appendChild(fila));
+        
+        // Re-aplicar colores a los badges
+        document.querySelectorAll('[data-rol-badge]').forEach(badge => {
+            const rol = badge.getAttribute('data-rol-badge');
+            badge.className = 'badge ' + getRolColor(rol);
+        });
+    }
+}
+
+// Event listeners para filtros y ordenamiento
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('filtroRol').addEventListener('change', aplicarFiltrosYOrden);
+    document.getElementById('filtroSucursal').addEventListener('change', aplicarFiltrosYOrden);
+    document.getElementById('ordenarPor').addEventListener('change', aplicarFiltrosYOrden);
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-people"></i> Gestión de Empleados
+                </h1>
+                <p class="text-muted">Administración y gestión de empleados y sus asignaciones a sucursales</p>
+            </div>
+            <a href="{{ url_for('admin_empleados_crear') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Registrar Nuevo Empleado
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="table-container">
+        <!-- Filtros y Ordenamiento -->
+        <div class="filters-container">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="filtroRol" class="form-label">
+                        <i class="bi bi-funnel"></i> Filtrar por Rol
+                    </label>
+                    <select class="form-select" id="filtroRol">
+                        <option value="">Todos los roles</option>
+                        <option value="vendedor">Vendedor</option>
+                        <option value="gestor de sucursal">Gestor de Sucursal</option>
+                        <option value="analista financiero">Analista Financiero</option>
+                        <option value="auditor">Auditor</option>
+                        <option value="inventarios">Inventarios</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="filtroSucursal" class="form-label">
+                        <i class="bi bi-shop"></i> Filtrar por Sucursal
+                    </label>
+                    <select class="form-select" id="filtroSucursal">
+                        <option value="">Todas las sucursales</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="ordenarPor" class="form-label">
+                        <i class="bi bi-sort-alpha-down"></i> Ordenar por
+                    </label>
+                    <select class="form-select" id="ordenarPor">
+                        <option value="nombre">Nombre (A-Z)</option>
+                        <option value="nombre-desc">Nombre (Z-A)</option>
+                        <option value="rol">Rol</option>
+                        <option value="sucursal">Sucursal</option>
+                        <option value="fecha">Fecha Asignación (Reciente)</option>
+                        <option value="fecha-desc">Fecha Asignación (Antigua)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover" id="tablaEmpleados">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre Completo</th>
+                        <th>Usuario</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Rol</th>
+                        <th>Sucursal</th>
+                        <th>Estado</th>
+                        <th>Fecha Asignación</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyEmpleados">
+                    {% if empleados %}
+                        {% for empleado in empleados %}
+                        <tr data-rol="{{ empleado.nombre_rol }}" data-sucursal="{{ empleado.nombre_sucursal or '' }}" data-nombre="{{ empleado.nombre_primero }} {{ empleado.apellido_paterno }}" data-fecha="{{ empleado.fecha_asignacion.strftime('%Y-%m-%d') if empleado.fecha_asignacion else '' }}">
+                            <td><strong>#{{ empleado.id_usuario }}</strong></td>
+                            <td>
+                                {{ empleado.nombre_primero }} 
+                                {% if empleado.nombre_segundo %}{{ empleado.nombre_segundo }} {% endif %}
+                                {{ empleado.apellido_paterno }} 
+                                {% if empleado.apellido_materno %}{{ empleado.apellido_materno }}{% endif %}
+                            </td>
+                            <td><code>{{ empleado.nombre_usuario }}</code></td>
+                            <td>{{ empleado.correo or 'N/A' }}</td>
+                            <td>{{ empleado.telefono or 'N/A' }}</td>
+                            <td>
+                                <span class="badge" data-rol-badge="{{ empleado.nombre_rol }}">{{ empleado.nombre_rol }}</span>
+                            </td>
+                            <td>
+                                {% if empleado.nombre_sucursal %}
+                                    <span class="badge bg-success">{{ empleado.nombre_sucursal }}</span>
+                                {% else %}
+                                    <span class="text-muted">Sin sucursal</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if empleado.activo_usuario_rol %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ empleado.fecha_asignacion.strftime('%d/%m/%Y') if empleado.fecha_asignacion else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox"></i> No hay empleados registrados
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

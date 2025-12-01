@@ -1,0 +1,537 @@
+{# Macros para tablas y componentes reutilizables #}
+{% macro tabla_productos(productos) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Costo</th>
+                <th>Material</th>
+                <th>Género</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        {# 👉 id distinto para que NO choque con inventario #}
+        <tbody id="tablaProductosBody">
+            {% if productos %}
+                {% for p in productos %}
+                <tr>
+                    <td>{{ p.id_producto }}</td>
+                    <td>{{ p.nombre or p.nombre_producto }}</td>
+                    <td><code>{{ p.sku }}</code></td>
+                    <td>{{ p.nombre_categoria }}</td>
+                    <td>${{ "{:,.2f}".format(p.precio_unitario or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(p.costo_unitario or 0) }}</td>
+                    <td>{{ p.material or 'N/A' }}</td>
+                    <td>{{ p.genero_producto or 'N/A' }}</td>
+                    <td>
+                        {% if p.activo_producto %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.id_producto %}
+                        <a href="/admin/productos/editar/{{ p.id_producto }}" 
+                           class="btn btn-sm btn-primary btn-editar-producto" 
+                           title="Editar Producto">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay productos registrados
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+
+{% macro tabla_productos_solo_lectura(productos, mostrar_acciones=false) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Costo</th>
+                <th>Material</th>
+                <th>Género</th>
+                <th>Estado</th>
+                {% if mostrar_acciones %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if productos %}
+                {% for producto in productos %}
+                <tr data-sucursales="{{ producto.sucursales_ids or '' }}">
+                    {% if producto is mapping %}
+                        {# Es un diccionario #}
+                        <td><strong>#{{ producto.get('id_producto', '') }}</strong></td>
+                        <td>{{ producto.get('nombre', producto.get('nombre_producto', '')) }}</td>
+                        <td><code>{{ producto.get('sku', '') }}</code></td>
+                        <td>{{ producto.get('nombre_categoria', '') }}</td>
+                        <td><strong class="text-success">${{ "{:,.2f}".format(producto.get('precio_unitario', producto.get('precio', 0)) or 0) }}</strong></td>
+                        <td>${{ "{:,.2f}".format(producto.get('costo_unitario', 0) or 0) }}</td>
+                        <td>{{ producto.get('material', 'N/A') or 'N/A' }}</td>
+                        <td>{{ producto.get('genero_producto', 'N/A') or 'N/A' }}</td>
+                        <td>
+                            {% if producto.get('activo_producto') %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        {% if mostrar_acciones %}
+                        <td>
+                            {% if producto.get('id_producto') %}
+                            <a href="/admin/productos/editar/{{ producto.get('id_producto') }}" 
+                               class="btn btn-sm btn-primary btn-editar-producto" 
+                               title="Editar Producto">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    {% else %}
+                        {# Es un objeto (tupla o objeto) #}
+                        <td><strong>#{{ producto.id_producto }}</strong></td>
+                        <td>{{ producto.nombre or producto.nombre_producto }}</td>
+                        <td><code>{{ producto.sku }}</code></td>
+                        <td>{{ producto.nombre_categoria }}</td>
+                        <td><strong class="text-success">${{ "{:,.2f}".format(producto.precio_unitario or producto.precio or 0) }}</strong></td>
+                        <td>${{ "{:,.2f}".format(producto.costo_unitario or 0) }}</td>
+                        <td>{{ producto.material or 'N/A' }}</td>
+                        <td>{{ producto.genero_producto or 'N/A' }}</td>
+                        <td>
+                            {% if producto.activo_producto %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        {% if mostrar_acciones %}
+                        <td>
+                            {% if producto.id_producto %}
+                            <a href="/admin/productos/editar/{{ producto.id_producto }}" 
+                               class="btn btn-sm btn-primary btn-editar-producto" 
+                               title="Editar Producto">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    {% endif %}
+                    {% if mostrar_acciones %}
+                    <td>
+                        {% if producto.id_producto %}
+                        <a href="/admin/productos/editar/{{ producto.id_producto }}" 
+                           class="btn btn-sm btn-primary btn-editar-producto" 
+                           title="Editar Producto">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="{% if mostrar_acciones %}10{% else %}9{% endif %}" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay productos registrados
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{% macro tabla_inventario(productos, solo_lectura=false) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th>Sucursal</th>   {# NUEVA COLUMNA #}
+                <th>Stock Actual</th>
+                <th>Stock Ideal</th>
+                <th>Unidades Faltantes</th>
+                <th>Estado Stock</th>
+                <th>Valor Inventario</th>
+                <th>Estado</th>
+                {% if not solo_lectura %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody id="tablaInventarioBody">  {# <-- IMPORTANTE para el filtro #}
+            {% if productos %}
+                {% for producto in productos %}
+                <tr data-sucursal-id="{{ producto.id_sucursal or '' }}">
+                    <td><strong>#{{ producto.id_producto }}</strong></td>
+                    <td>{{ producto.nombre or producto.nombre_producto }}</td>
+                    <td><code>{{ producto.sku }}</code></td>
+                    <td>{{ producto.nombre_categoria }}</td>
+                    <td>{{ producto.nombre_sucursal or 'Sin sucursal' }}</td>  {# NUEVA CELDA #}
+                    <td><strong>{{ producto.stock_actual or 0 }}</strong></td>
+                    <td>{{ producto.stock_ideal or 0 }}</td>
+                    <td>
+                        {% set faltantes = producto.unidades_faltantes or producto.Unidades_Faltantes or 0 %}
+                        {% if faltantes > 0 %}
+                            <span class="text-danger"><strong>{{ faltantes }}</strong></span>
+                        {% else %}
+                            <span class="text-success">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if (producto.unidades_faltantes or producto.Unidades_Faltantes or 0) > 0 %}
+                            <span class="badge bg-warning">Bajo</span>
+                        {% else %}
+                            <span class="badge bg-success">Normal</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ "{:,.2f}".format((producto.stock_actual or 0) * (producto.costo_unitario or 0)) }}</td>
+                    <td>
+                        {% if producto.activo_producto %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    {% if not solo_lectura %}
+                    <td>
+                        <button class="btn btn-sm btn-warning btn-ajustar-inventario" 
+                                data-sku="{{ producto.sku }}" 
+                                data-nombre="{{ producto.nombre or producto.nombre_producto }}"
+                                data-sucursal="{{ producto.nombre_sucursal or '' }}"
+                                title="Ajustar Inventario">
+                            <i class="bi bi-box-arrow-in-down"></i> Ajustar
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="{% if solo_lectura %}11{% else %}12{% endif %}" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay productos en inventario
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+
+{% macro tabla_devoluciones(devoluciones, mostrar_cambiar_estado=true) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID Devolución</th>
+                <th>ID Pedido</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Tipo</th>
+                <th>Cantidad Productos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if devoluciones %}
+                {% for devolucion in devoluciones %}
+                <tr>
+                    <td><strong>#{{ devolucion.id_devolucion }}</strong></td>
+                    <td>#{{ devolucion.id_pedido }}</td>
+                    <td>{{ devolucion.fecha_devolucion.strftime('%d/%m/%Y') if devolucion.fecha_devolucion else 'N/A' }}</td>
+                    <td>
+                        {% if devolucion.estado_devolucion == 'Completado' %}
+                            <span class="badge bg-success">{{ devolucion.estado_devolucion }}</span>
+                        {% elif devolucion.estado_devolucion == 'Autorizado' %}
+                            <span class="badge bg-info">{{ devolucion.estado_devolucion }}</span>
+                        {% elif devolucion.estado_devolucion == 'Rechazado' %}
+                            <span class="badge bg-danger">{{ devolucion.estado_devolucion }}</span>
+                        {% elif devolucion.estado_devolucion == 'Pendiente' %}
+                            <span class="badge bg-warning">{{ devolucion.estado_devolucion }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ devolucion.estado_devolucion or 'Pendiente' }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ devolucion.tipo_devolucion or 'N/A' }}</td>
+                    <td>{{ devolucion.cantidad_productos or 0 }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-info btn-ver-devolucion" data-devolucion-id="{{ devolucion.id_devolucion }}" title="Ver Detalles">
+                                <i class="bi bi-eye"></i> Ver Detalles
+                            </button>
+                            {% if mostrar_cambiar_estado and devolucion.estado_devolucion != 'Completado' %}
+                                <button class="btn btn-sm btn-primary btn-cambiar-estado-devolucion" 
+                                        data-devolucion-id="{{ devolucion.id_devolucion }}"
+                                        data-estado-actual="{{ devolucion.estado_devolucion }}"
+                                        title="Cambiar Estado">
+                                    <i class="bi bi-arrow-repeat"></i> Cambiar Estado
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay devoluciones registradas
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{% macro tabla_pedidos(pedidos) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID Pedido</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if pedidos %}
+                {% for pedido in pedidos %}
+                <tr>
+                    <td>
+                        <strong>#{{ pedido.id_pedido }}</strong>
+                    </td>
+                    <td>
+                        {{ pedido.fecha_pedido.strftime('%Y-%m-%d %H:%M') if pedido.fecha_pedido else 'N/A' }}
+                    </td>
+                    <td>
+                        {{ pedido.nombre_cliente or pedido.nombre_usuario or 'N/A' }}
+                    </td>
+                    <td>
+                        <strong class="text-success">${{ "{:,.2f}".format(pedido.total_pedido or 0) }}</strong>
+                    </td>
+                    <td>
+                        {% if pedido.estado_pedido == 'Cancelado' %}
+                            <span class="badge bg-danger">{{ pedido.estado_pedido }}</span>
+                        {% elif pedido.estado_pedido == 'Completado' %}
+                            <span class="badge bg-success">{{ pedido.estado_pedido }}</span>
+                        {% elif pedido.estado_pedido == 'Procesado' %}
+                            <span class="badge bg-info">{{ pedido.estado_pedido }}</span>
+                        {% elif pedido.estado_pedido == 'Confirmado' %}
+                            <span class="badge bg-warning">{{ pedido.estado_pedido }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ pedido.estado_pedido or 'Pendiente' }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            {% if pedido.estado_pedido != 'Cancelado' and pedido.estado_pedido != 'Completado' and pedido.id_estado_pedido not in [3, 4] %}
+                                <button class="btn btn-sm btn-primary" onclick="abrirModalCambiarEstado({{ pedido.id_pedido }}, '{{ pedido.estado_pedido }}')" title="Cambiar Estado">
+                                    <i class="bi bi-arrow-repeat"></i> Cambiar Estado
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="abrirModalCancelar({{ pedido.id_pedido }})" title="Cancelar Pedido">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                            {% elif pedido.estado_pedido == 'Completado' %}
+                                <span class="text-muted">Finalizado</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay pedidos registrados
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{% macro tabla_facturas_pagos(facturas) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID Factura</th>
+                <th>ID Pedido</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>Pendiente</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tablaInventarioBody">
+            {% if productos %}
+                {% for producto in productos %}
+                <tr data-sucursales="{{ producto.sucursales_ids or '' }}">
+                    <td><strong>#{{ factura.id_factura }}</strong></td>
+                    <td>#{{ factura.id_pedido }}</td>
+                    <td>{{ factura.fecha_factura.strftime('%d/%m/%Y') if factura.fecha_factura else 'N/A' }}</td>
+                    <td>${{ "{:,.2f}".format(factura.total) }}</td>
+                    <td>${{ "{:,.2f}".format(factura.total_pagado) }}</td>
+                    <td><strong>${{ "{:,.2f}".format(factura.pendiente) }}</strong></td>
+                    <td>
+                        {% if factura.estado_pago == 'Pagada' %}
+                            <span class="badge badge-pagada">{{ factura.estado_pago }}</span>
+                        {% elif factura.estado_pago == 'Parcial' %}
+                            <span class="badge badge-parcial">{{ factura.estado_pago }}</span>
+                        {% else %}
+                            <span class="badge badge-pendiente">{{ factura.estado_pago }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" 
+                                onclick="abrirModalPago({{ factura.id_factura }}, {{ factura.pendiente }})">
+                            <i class="bi bi-credit-card"></i> Registrar Pago
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay facturas registradas
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{% macro tabla_facturas(facturas) %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID Factura</th>
+                <th>Folio</th>
+                <th>ID Pedido</th>
+                <th>Cliente</th>
+                <th>Fecha Emisión</th>
+                <th>Subtotal</th>
+                <th>Impuestos</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>Pendiente</th>
+                <th>Estado Factura</th>
+                <th>Estado Pago</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if facturas %}
+                {% for factura in facturas %}
+                <tr>
+                    <td><strong>#{{ factura.id_factura }}</strong></td>
+                    <td>
+                        <small class="text-muted">{{ factura.folio[:8] }}...</small>
+                    </td>
+                    <td>#{{ factura.id_pedido }}</td>
+                    <td>
+                        {{ factura.nombre_cliente or factura.nombre_usuario or 'N/A' }}
+                    </td>
+                    <td>
+                        {% if factura.fecha_emision %}
+                            {% if factura.fecha_emision is string %}
+                                {{ factura.fecha_emision }}
+                            {% else %}
+                                {{ factura.fecha_emision.strftime('%d/%m/%Y') }}
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>${{ "{:,.2f}".format(factura.subtotal or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(factura.impuestos or 0) }}</td>
+                    <td><strong class="text-success">${{ "{:,.2f}".format(factura.total or 0) }}</strong></td>
+                    <td>${{ "{:,.2f}".format(factura.total_pagado or 0) }}</td>
+                    <td>
+                        {% if factura.pendiente and factura.pendiente > 0 %}
+                            <strong class="text-warning">${{ "{:,.2f}".format(factura.pendiente) }}</strong>
+                        {% else %}
+                            <span class="text-success">$0.00</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if factura.estado_factura == 'Pagada' %}
+                            <span class="badge bg-success">{{ factura.estado_factura }}</span>
+                        {% elif factura.estado_factura == 'Cancelada' %}
+                            <span class="badge bg-danger">{{ factura.estado_factura }}</span>
+                        {% elif factura.estado_factura == 'Parcial' %}
+                            <span class="badge bg-warning">{{ factura.estado_factura }}</span>
+                        {% elif factura.estado_factura == 'En revisión' %}
+                            <span class="badge bg-info">{{ factura.estado_factura }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ factura.estado_factura or 'Emitida' }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if factura.estado_pago == 'Pagada' %}
+                            <span class="badge bg-success">{{ factura.estado_pago }}</span>
+                        {% elif factura.estado_pago == 'Parcial' %}
+                            <span class="badge bg-warning">{{ factura.estado_pago }}</span>
+                        {% else %}
+                            <span class="badge bg-danger">{{ factura.estado_pago or 'Pendiente' }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="12" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No hay facturas registradas
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+

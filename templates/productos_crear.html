@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Producto - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/productos_crear.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-plus-circle"></i> Crear Nuevo Producto
+        </h1>
+        <p class="page-subtitle">Complete el formulario para agregar un nuevo producto al catálogo</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-container">
+        <form id="formCrearProducto" onsubmit="event.preventDefault(); event.stopPropagation(); return false;"
+            enctype="multipart/form-data" novalidate>
+            <!-- Información Básica -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-info-circle"></i> Información Básica
+                </h3>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="nombre_producto" class="form-label required-field">Nombre del Producto</label>
+                        <input type="text" class="form-control" id="nombre_producto" name="nombre_producto" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="categoria" class="form-label required-field">Categoría</label>
+                        <select class="form-select" id="categoria" name="categoria" required>
+                            <option value="">Seleccione una categoría</option>
+                            {% if categorias %}
+                            {% for categoria in categorias %}
+                            <option value="{{ categoria.nombre_categoria }}">{{ categoria.nombre_categoria }}</option>
+                            {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="sku" class="form-label required-field">SKU</label>
+                        <input type="text" class="form-control" id="sku" name="sku" required placeholder="AUR-999X"
+                            maxlength="8">
+                        <small class="form-text text-muted">
+                            <div class="mt-2 p-2 bg-light rounded border-start border-info border-3">
+                                <strong class="text-primary">💡 ¿Cómo funciona?</strong><br>
+                                <span class="d-block mt-1">
+                                    El sistema <strong>automáticamente agrega el prefijo "AUR-"</strong> al inicio del
+                                    SKU.
+                                </span>
+                                <span class="d-block mt-2">
+                                    <strong>Usted solo necesita ingresar:</strong> <code
+                                        class="text-success">018A</code> o <code class="text-success">123B</code>
+                                </span>
+                                <span class="d-block mt-2">
+                                    <strong>El sistema completará:</strong> <code class="text-primary">AUR-018A</code> o
+                                    <code class="text-primary">AUR-123B</code>
+                                </span>
+                                <span class="d-block mt-2 text-muted small">
+                                    <em>También puede ingresar el SKU completo (AUR-018A) y el sistema lo procesará
+                                        correctamente.</em>
+                                </span>
+                            </div>
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="precio_unitario" class="form-label required-field">Precio Unitario</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="precio_unitario" name="precio_unitario"
+                                step="0.01" min="0" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="material" class="form-label required-field">Material</label>
+                        <select class="form-select" id="material" name="material" required>
+                            <option value="">Seleccione un material</option>
+                            {% if materiales %}
+                            {% for material in materiales %}
+                            <option value="{{ material.material }}">{{ material.material }}</option>
+                            {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="genero_producto" class="form-label required-field">Género del Producto</label>
+                        <select class="form-select" id="genero_producto" name="genero_producto" required>
+                            <option value="">Seleccione un género</option>
+                            {% if generos_productos %}
+                            {% for genero in generos_productos %}
+                            <option value="{{ genero.genero_producto }}">{{ genero.genero_producto }}</option>
+                            {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalles del Producto -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-card-text"></i> Detalles del Producto
+                </h3>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="costo_unitario" class="form-label required-field">Costo Unitario</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="costo_unitario" name="costo_unitario"
+                                step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="descuento_producto" class="form-label">Descuento (%)</label>
+                        <input type="number" class="form-control" id="descuento_producto" name="descuento_producto"
+                            min="0" max="100" value="0">
+                        <small class="form-text text-muted">Porcentaje de descuento (0-100)</small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6" id="talla-container" style="display: none;">
+                        <label for="talla" class="form-label">Talla <span class="text-danger">*</span></label>
+                        <select class="form-select" id="talla" name="talla">
+                            <option value="">Seleccione una talla</option>
+                            {% if tallas %}
+                            {% for talla_item in tallas %}
+                            <option value="{{ talla_item.talla }}">{{ talla_item.talla }}</option>
+                            {% endfor %}
+                            {% endif %}
+                        </select>
+                        <small class="form-text text-muted">Requerido para productos tipo Anillos</small>
+                    </div>
+                </div>
+
+                <!-- Campos específicos por material -->
+                <div class="row mb-3" id="kilataje-container" style="display: none;">
+                    <div class="col-md-6">
+                        <label for="kilataje" class="form-label">Kilataje <span class="text-danger">*</span></label>
+                        <select class="form-select" id="kilataje" name="kilataje">
+                            <option value="">Seleccione kilataje</option>
+                            <option value="10K">10K</option>
+                            <option value="14K">14K</option>
+                            <option value="18K">18K</option>
+                            <option value="24K">24K</option>
+                        </select>
+                        <small class="form-text text-muted">Requerido para productos de Oro</small>
+                    </div>
+                </div>
+
+                <div class="row mb-3" id="ley-container" style="display: none;">
+                    <div class="col-md-6">
+                        <label for="ley" class="form-label">Ley <span class="text-danger">*</span></label>
+                        <select class="form-select" id="ley" name="ley">
+                            <option value="">Seleccione ley</option>
+                            <option value="800">800</option>
+                            <option value="830">830</option>
+                            <option value="835">835</option>
+                            <option value="900">900</option>
+                            <option value="925">925</option>
+                            <option value="950">950</option>
+                            <option value="999">999</option>
+                        </select>
+                        <small class="form-text text-muted">Requerido para productos de Plata</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
+                        placeholder="Ingrese una descripción detallada del producto..."></textarea>
+                </div>
+            </div>
+
+            <!-- Imagen del Producto -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-image"></i> Imagen del Producto
+                </h3>
+
+                <div class="mb-3">
+                    <label for="imagen" class="form-label">Imagen</label>
+                    <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
+                    <small class="form-text text-muted">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB</small>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-toggle-on"></i> Estado
+                </h3>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="activo_producto" name="activo_producto"
+                            checked>
+                        <label class="form-check-label" for="activo_producto">
+                            Producto Activo
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">Los productos inactivos no se mostrarán en el catálogo
+                        público</small>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="d-flex justify-content-end gap-3 mt-4">
+                <a href="{{ url_for('admin_catalogo') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="button" id="btnGuardarProducto" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Guardar Producto
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/productos_crear.js') }}"></script>
+{% endblock %}

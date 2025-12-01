@@ -1,0 +1,214 @@
+{% extends "cliente_base.html" %}
+
+{% block title %}Mis Pedidos - Joyería Premium{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8fafc;
+    }
+
+    .page-header {
+        background: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+        padding: 12px;
+    }
+
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        border-radius: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="bi bi-cart"></i> Mis Pedidos
+        </h1>
+        <p class="text-muted">Historial de todos tus pedidos</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="table-container">
+        {% if pedidos %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID Pedido</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Factura</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                    <tr>
+                        <td><strong>#{{ pedido.id_pedido }}</strong></td>
+                        <td>{{ pedido.fecha_pedido.strftime('%d/%m/%Y') if pedido.fecha_pedido else 'N/A' }}</td>
+                        <td><strong>${{ "{:,.2f}".format(pedido.total_pedido or 0) }}</strong></td>
+                        <td>
+                            <span class="badge 
+                                {% if pedido.estado_pedido == 'Completado' %}bg-success
+                                {% elif pedido.estado_pedido == 'Procesado' %}bg-info
+                                {% elif pedido.estado_pedido == 'Confirmado' %}bg-primary
+                                {% elif pedido.estado_pedido == 'Cancelado' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ pedido.estado_pedido or 'N/A' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if pedido.id_factura %}
+                                <a href="{{ url_for('cliente_facturas') }}" class="text-decoration-none">
+                                    <i class="bi bi-file-text"></i> {{ pedido.folio or 'Ver Factura' }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Sin factura</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                {% if not pedido.id_factura and pedido.estado_pedido in ['Completado', 'Procesado', 'Confirmado'] %}
+                                    <button class="btn btn-sm btn-outline-primary btn-action btn-crear-factura" 
+                                            data-pedido-id="{{ pedido.id_pedido }}">
+                                        <i class="bi bi-file-earmark-plus"></i> Crear Factura
+                                    </button>
+                                {% endif %}
+                                {% if pedido.estado_pedido in ['Completado', 'Procesado', 'Confirmado'] %}
+                                    <a href="{{ url_for('cliente_crear_devolucion') }}?pedido={{ pedido.id_pedido }}" 
+                                       class="btn btn-sm btn-outline-warning btn-action">
+                                        <i class="bi bi-arrow-return-left"></i> Devolución
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-cart-x" style="font-size: 4rem; color: #cbd5e1;"></i>
+            <h3 class="mt-3 text-muted">No tienes pedidos aún</h3>
+            <p class="text-muted">Comienza a comprar en nuestro catálogo</p>
+            <a href="{{ url_for('cliente_dashboard') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-shop"></i> Ver Catálogo
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar click en botones de crear factura
+        const botonesCrearFactura = document.querySelectorAll('.btn-crear-factura');
+        
+        botonesCrearFactura.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const idPedido = this.getAttribute('data-pedido-id');
+                const btnOriginal = this;
+                
+                // Deshabilitar botón y mostrar loading
+                btnOriginal.disabled = true;
+                const textoOriginal = btnOriginal.innerHTML;
+                btnOriginal.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...';
+                
+                // Llamar a la API
+                fetch('/api/cliente/facturas/crear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_pedido: parseInt(idPedido)
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Mostrar mensaje de éxito
+                        alert('Factura creada exitosamente');
+                        // Recargar la página para mostrar la factura
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo crear la factura'));
+                        // Restaurar botón
+                        btnOriginal.disabled = false;
+                        btnOriginal.innerHTML = textoOriginal;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const errorMsg = error.error || error.message || 'Error al crear la factura. Por favor, intenta de nuevo.';
+                    alert('Error: ' + errorMsg);
+                    // Restaurar botón
+                    btnOriginal.disabled = false;
+                    btnOriginal.innerHTML = textoOriginal;
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}
+

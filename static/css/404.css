@@ -1,0 +1,50 @@
+.error-404-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px 20px;
+}
+
+.error-404-number {
+    font-size: 6rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 20px;
+    line-height: 1;
+}
+
+.error-404-message {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+}
+
+.error-404-message .text-danger {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.error-404-description {
+    font-size: 1rem;
+    color: #64748b;
+    margin-bottom: 30px;
+}
+
+.btn-return-dashboard {
+    background: #ff9500;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-return-dashboard:hover {
+    background: #e68600;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+}

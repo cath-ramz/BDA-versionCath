@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Completar Datos del Cliente - Panel de Ventas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .card-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .alert-info {
+        background-color: #e0f2fe;
+        border-color: #bae6fd;
+        color: #0c4a6e;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-person-check"></i> Completar Datos del Cliente
+                </h1>
+                <p class="text-muted">Complete los datos requeridos para crear el pedido</p>
+            </div>
+            <a href="{{ url_for('ventas_crear_pedido') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card-container">
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Cliente:</strong> {{ nombre_completo }}
+            <br>
+            <small>Complete los siguientes datos para poder crear el pedido.</small>
+        </div>
+
+        <form id="formCompletarDatos">
+            <input type="hidden" id="idCliente" value="{{ id_cliente }}">
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label for="rfc" class="form-label">RFC <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="rfc" maxlength="13" required placeholder="Ej: ABC123456DEF" value="{{ cliente.rfc_usuario or '' }}">
+                    <small class="text-muted">Registro Federal de Contribuyentes (obligatorio para crear pedidos)</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="telefono" class="form-label">Teléfono <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="telefono" maxlength="15" required placeholder="Ej: 5512345678" value="{{ cliente.telefono or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="calle" class="form-label">Calle <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="calle" required placeholder="Ej: Av. Reforma" value="{{ cliente.calle_direccion or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="numero" maxlength="10" required placeholder="Ej: 123" value="{{ cliente.numero_direccion or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="codigoPostal" class="form-label">Código Postal <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="codigoPostal" maxlength="5" required placeholder="Ej: 01234" pattern="[0-9]{5}" value="{{ cliente.codigo_postal or '' }}">
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar y Crear Pedido
+                    </button>
+                    <a href="{{ url_for('ventas_crear_pedido') }}" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('formCompletarDatos').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const idCliente = parseInt(document.getElementById('idCliente').value);
+    const data = {
+        rfc_usuario: document.getElementById('rfc').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        calle_direccion: document.getElementById('calle').value.trim(),
+        numero_direccion: document.getElementById('numero').value.trim(),
+        codigo_postal: document.getElementById('codigoPostal').value.trim()
+    };
+    
+    // Validar código postal
+    if (data.codigo_postal.length !== 5 || !/^\d+$/.test(data.codigo_postal)) {
+        alert('El código postal debe tener exactamente 5 dígitos numéricos');
+        return;
+    }
+    
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+    
+    try {
+        // Guardar datos del cliente
+        const response = await fetch(`/api/admin/clientes/${idCliente}/completar-datos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Obtener datos del pedido pendiente de sessionStorage
+            const pedidoPendiente = sessionStorage.getItem('pedidoPendiente');
+            
+            if (pedidoPendiente) {
+                const pedidoData = JSON.parse(pedidoPendiente);
+                
+                // Crear el pedido
+                const crearResponse = await fetch('/api/ventas/pedidos/crear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pedidoData)
+                });
+                
+                const crearResult = await crearResponse.json();
+                
+                // Limpiar sessionStorage
+                sessionStorage.removeItem('pedidoPendiente');
+                
+                if (crearResult.success) {
+                    if (crearResult.id_factura) {
+                        const pagarAhora = confirm('Pedido creado exitosamente. ¿Desea registrar el pago ahora?');
+                        if (pagarAhora) {
+                            window.location.href = `/ventas/pedidos/${crearResult.id_pedido}/pagar`;
+                        } else {
+                            // Redirigir a la lista de pedidos de ventas
+                            window.location.href = '/ventas/pedidos';
+                        }
+                    } else {
+                        alert('Pedido creado exitosamente. La factura se generará cuando el pedido cambie de estado.');
+                        // Redirigir a la lista de pedidos de ventas
+                        window.location.href = '/ventas/pedidos';
+                    }
+                } else {
+                    alert('Datos guardados, pero error al crear el pedido: ' + (crearResult.mensaje || 'Error desconocido'));
+                    // Volver a la página de crear pedido
+                    window.location.href = '/ventas/pedidos/crear';
+                }
+            } else {
+                alert('Datos guardados exitosamente');
+                // Volver a la página de crear pedido
+                window.location.href = '/ventas/pedidos/crear';
+            }
+        } else {
+            const errorMsg = result.error || result.mensaje || 'No se pudieron guardar los datos';
+            alert('Error: ' + errorMsg);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Guardar y Crear Pedido';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        console.error('Error completo:', error);
+        alert('Error de conexión al guardar los datos. Por favor, verifique su conexión e intente nuevamente.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Guardar y Crear Pedido';
+    }
+});
+</script>
+{% endblock %}
+

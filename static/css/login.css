@@ -1,0 +1,64 @@
+body {
+    background: #1e293b;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.login-container {
+    width: 100%;
+    max-width: 450px;
+    background: white;
+    padding: 50px 40px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.login-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+.lock-icon {
+    width: 70px;
+    height: 70px;
+    background: #ff9500;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 32px;
+}
+.form-group { margin-bottom: 24px; }
+.form-label { font-weight: 600; margin-bottom: 8px; display: block; font-size: 14px; }
+.form-control {
+    background: #f1f5f9;
+    border: 2px solid #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+.form-control:focus {
+    background: white;
+    border-color: #ff9500;
+    box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.1);
+}
+.btn-login {
+    background: #ff9500;
+    color: white;
+    padding: 14px;
+    width: 100%;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 8px;
+}
+.btn-login:hover { background: #e68600; }
+.alert { margin-bottom: 24px; }
+.small-link {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 14px;
+}
+.small-link a { color: #ff9500; text-decoration: none; }
+.small-link a:hover { color: #e68600; }

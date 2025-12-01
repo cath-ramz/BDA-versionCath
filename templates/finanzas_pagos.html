@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Cuentas - Panel de Finanzas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+        padding: 12px;
+    }
+
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .badge-pagada {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .badge-parcial {
+        background-color: #f59e0b;
+        color: white;
+    }
+
+    .badge-pendiente {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .text-success {
+        color: #10b981 !important;
+    }
+
+    .text-warning {
+        color: #f59e0b !important;
+    }
+
+    .text-danger {
+        color: #ef4444 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-credit-card"></i> Cuentas
+                </h1>
+                <p class="text-muted">Gestión de pagos recibidos y cuentas por cobrar</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Pagos Recibidos -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-check-circle text-success"></i> Pagos Recibidos
+        </h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID Pago</th>
+                        <th>ID Factura</th>
+                        <th>Folio</th>
+                        <th>Cliente</th>
+                        <th>Fecha Pago</th>
+                        <th>Monto</th>
+                        <th>Método de Pago</th>
+                        <th>ID Pedido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if pagos_recibidos %}
+                        {% for pago in pagos_recibidos %}
+                        <tr>
+                            <td><strong>#{{ pago.id_pago }}</strong></td>
+                            <td>#{{ pago.id_factura }}</td>
+                            <td><small class="text-muted">{{ pago.folio[:8] }}...</small></td>
+                            <td>{{ pago.nombre_cliente or 'N/A' }}</td>
+                            <td>
+                                {% if pago.fecha_pago %}
+                                    {% if pago.fecha_pago is string %}
+                                        {{ pago.fecha_pago }}
+                                    {% else %}
+                                        {{ pago.fecha_pago.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td><strong class="text-success">${{ "{:,.2f}".format(pago.monto_metodo_pago or 0) }}</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ pago.nombre_metodo_pago or 'N/A' }}</span>
+                            </td>
+                            <td>#{{ pago.id_pedido }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox"></i> No hay pagos recibidos registrados
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagos Pendientes / Cuentas por Cobrar -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-clock-history text-warning"></i> Pagos Pendientes / Cuentas por Cobrar
+        </h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID Factura</th>
+                        <th>Folio</th>
+                        <th>Cliente</th>
+                        <th>Fecha Emisión</th>
+                        <th>Total Factura</th>
+                        <th>Pagado</th>
+                        <th>Pendiente</th>
+                        <th>Fecha Límite de Cobro</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if pagos_pendientes %}
+                        {% for factura in pagos_pendientes %}
+                        <tr>
+                            <td><strong>#{{ factura.id_factura }}</strong></td>
+                            <td><small class="text-muted">{{ factura.folio[:8] }}...</small></td>
+                            <td>{{ factura.nombre_cliente or 'N/A' }}</td>
+                            <td>
+                                {% if factura.fecha_emision %}
+                                    {% if factura.fecha_emision is string %}
+                                        {{ factura.fecha_emision }}
+                                    {% else %}
+                                        {{ factura.fecha_emision.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td><strong>${{ "{:,.2f}".format(factura.total or 0) }}</strong></td>
+                            <td>${{ "{:,.2f}".format(factura.total_pagado or 0) }}</td>
+                            <td><strong class="text-warning">${{ "{:,.2f}".format(factura.pendiente or 0) }}</strong></td>
+                            <td>
+                                {% if factura.fecha_limite_cobro %}
+                                    {% if factura.fecha_limite_cobro is string %}
+                                        {{ factura.fecha_limite_cobro }}
+                                    {% else %}
+                                        {{ factura.fecha_limite_cobro.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if factura.estado_pago == 'Pagada' %}
+                                    <span class="badge badge-pagada">Pagada</span>
+                                {% elif factura.estado_pago == 'Parcial' %}
+                                    <span class="badge badge-parcial">Parcial</span>
+                                {% else %}
+                                    <span class="badge badge-pendiente">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary btn-marcar-pagado" 
+                                        data-factura-id="{{ factura.id_factura }}"
+                                        data-pendiente="{{ factura.pendiente }}"
+                                        data-total="{{ factura.total }}">
+                                    <i class="bi bi-check-circle"></i> Marcar como Pagado
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox"></i> No hay pagos pendientes
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Marcar como Pagado -->
+<div class="modal fade" id="modalMarcarPagado" tabindex="-1" aria-labelledby="modalMarcarPagadoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMarcarPagadoLabel">
+                    <i class="bi bi-check-circle"></i> Marcar Factura como Pagada
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertMarcarPagadoContainer"></div>
+                <form id="formMarcarPagado">
+                    <input type="hidden" id="marcarPagadoIdFactura" name="id_factura">
+                    <input type="hidden" id="marcarPagadoPendiente" name="pendiente">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">ID Factura</label>
+                        <input type="text" class="form-control" id="marcarPagadoIdFacturaDisplay" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Monto Pendiente</label>
+                        <input type="text" class="form-control" id="marcarPagadoPendienteDisplay" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="marcarPagadoMetodo" class="form-label">Método de Pago <span class="text-danger">*</span></label>
+                        <select class="form-select" id="marcarPagadoMetodo" name="id_metodo_pago" required>
+                            <option value="">Seleccione un método...</option>
+                            {% for metodo in metodos_pago %}
+                                <option value="{{ metodo.id_metodo_pago }}">{{ metodo.nombre_metodo_pago }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="marcarPagadoImporte" class="form-label">Importe a Registrar <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="marcarPagadoImporte" name="importe" step="0.01" min="0.01" required>
+                        <small class="text-muted">Ingrese el monto a registrar. Puede ser el monto pendiente completo o un pago parcial.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarMarcarPagado">
+                    <i class="bi bi-check-circle"></i> Registrar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Botones para marcar como pagado
+    document.querySelectorAll('.btn-marcar-pagado').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const idFactura = this.getAttribute('data-factura-id');
+            const pendiente = parseFloat(this.getAttribute('data-pendiente'));
+            const total = parseFloat(this.getAttribute('data-total'));
+            
+            abrirModalMarcarPagado(idFactura, pendiente, total);
+        });
+    });
+    
+    // Confirmar marcar como pagado
+    document.getElementById('btnConfirmarMarcarPagado').addEventListener('click', function() {
+        const form = document.getElementById('formMarcarPagado');
+        
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        const idFactura = parseInt(document.getElementById('marcarPagadoIdFactura').value);
+        const importe = parseFloat(document.getElementById('marcarPagadoImporte').value);
+        const idMetodoPago = parseInt(document.getElementById('marcarPagadoMetodo').value);
+        
+        if (!idMetodoPago || !importe || importe <= 0) {
+            showMarcarPagadoAlert('Por favor complete todos los campos requeridos', 'danger');
+            return;
+        }
+        
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+        
+        fetch('/api/finanzas/pagos/registrar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id_factura: idFactura,
+                importe: importe,
+                id_metodo_pago: idMetodoPago
+            })
+        })
+        .then(async r => {
+            // Intentar leer el JSON incluso si hay error
+            let data;
+            try {
+                data = await r.json();
+            } catch (e) {
+                // Si no se puede leer JSON, crear un objeto con el error
+                data = { error: `Error ${r.status}: ${r.statusText}` };
+            }
+            
+            if (!r.ok) {
+                throw new Error(data.error || data.mensaje || `Error ${r.status}: ${r.statusText}`);
+            }
+            return data;
+        })
+        .then(result => {
+            if (result.success) {
+                showMarcarPagadoAlert(result.mensaje || 'Pago registrado exitosamente', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showMarcarPagadoAlert(result.mensaje || result.error || 'Error al registrar el pago', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Registrar Pago';
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            const errorMsg = err.message || 'Error al registrar el pago. Por favor, intenta de nuevo.';
+            showMarcarPagadoAlert(errorMsg, 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Registrar Pago';
+        });
+    });
+    
+    function abrirModalMarcarPagado(idFactura, pendiente, total) {
+        document.getElementById('marcarPagadoIdFactura').value = idFactura;
+        document.getElementById('marcarPagadoIdFacturaDisplay').value = 'Factura #' + idFactura;
+        document.getElementById('marcarPagadoPendiente').value = pendiente;
+        document.getElementById('marcarPagadoPendienteDisplay').value = '$' + pendiente.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('marcarPagadoImporte').value = pendiente;
+        document.getElementById('marcarPagadoImporte').max = pendiente;
+        document.getElementById('marcarPagadoMetodo').value = '';
+        document.getElementById('alertMarcarPagadoContainer').innerHTML = '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalMarcarPagado'));
+        modal.show();
+    }
+    
+    function showMarcarPagadoAlert(message, type) {
+        const alertContainer = document.getElementById('alertMarcarPagadoContainer');
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}
+

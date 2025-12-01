@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Sucursales - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .card-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+        padding: 12px;
+    }
+
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .badge-activo {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .badge-inactivo {
+        background-color: #6b7280;
+        color: white;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-warning {
+        background-color: #f59e0b;
+        border-color: #f59e0b;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background-color: #d97706;
+        border-color: #d97706;
+        color: white;
+    }
+
+    .btn-success {
+        background-color: #10b981;
+        border-color: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background-color: #059669;
+        border-color: #059669;
+        color: white;
+    }
+
+    .bg-info {
+        background-color: #0ea5e9 !important;
+    }
+
+    .form-switch .form-check-input {
+        width: 3rem;
+        height: 1.5rem;
+        cursor: pointer;
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: #10b981;
+        border-color: #10b981;
+    }
+
+    .form-switch .form-check-input:focus {
+        border-color: #10b981;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+    }
+
+    .form-switch .form-check-label {
+        margin-left: 0.5rem;
+        cursor: pointer;
+        user-select: none;
+        font-weight: 500;
+    }
+
+    .d-flex.gap-2 {
+        gap: 0.5rem !important;
+    }
+
+    .d-flex.gap-2 .btn {
+        min-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-shop"></i> Gestión de Sucursales
+                </h1>
+                <p class="text-muted">Administra sucursales y asigna productos con stocks ideales</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Botones para acciones adicionales - ARRIBA -->
+    <div class="d-flex gap-2 mb-4">
+        <a href="{{ url_for('admin_sucursales_crear') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Crear Nueva Sucursal
+        </a>
+        <a href="{{ url_for('admin_sucursales_asignar_producto') }}" class="btn btn-success">
+            <i class="bi bi-link-45deg"></i> Asignar Producto a Sucursal
+        </a>
+    </div>
+
+    <!-- Lista de sucursales existentes -->
+    <div class="card-container">
+        <h3 class="mb-4">
+            <i class="bi bi-list-ul"></i> Sucursales Existentes
+        </h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Dirección</th>
+                        <th>Código Postal</th>
+                        <th>Usuarios</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sucursal in sucursales %}
+                    <tr>
+                        <td>#{{ sucursal.id_sucursal }}</td>
+                        <td><strong>{{ sucursal.nombre_sucursal }}</strong></td>
+                        <td>{{ sucursal.calle_direccion }} {{ sucursal.numero_direccion }}{% if sucursal.municipio_direccion %}, {{ sucursal.municipio_direccion }}{% endif %}{% if sucursal.estado_direccion %}, {{ sucursal.estado_direccion }}{% endif %}</td>
+                        <td>{{ sucursal.codigo_postal }}</td>
+                        <td>
+                            <span class="badge bg-info text-white">
+                                <i class="bi bi-people"></i> {{ sucursal.cantidad_usuarios|default(0) }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if sucursal.activo_sucursal %}
+                                <span class="badge badge-activo">Activa</span>
+                            {% else %}
+                                <span class="badge badge-inactivo">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    onclick="abrirModalEditar({{ sucursal.id_sucursal }}, '{{ sucursal.nombre_sucursal }}', '{{ sucursal.calle_direccion }}', '{{ sucursal.numero_direccion }}', '{{ sucursal.codigo_postal }}', {{ sucursal.activo_sucursal|int }}, '{{ sucursal.estado_direccion or '' }}', '{{ sucursal.municipio_direccion or '' }}')"
+                                    title="Editar sucursal">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para editar sucursal -->
+    <div class="modal fade" id="modalEditarSucursal" tabindex="-1" aria-labelledby="modalEditarSucursalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarSucursalLabel">
+                        <i class="bi bi-pencil"></i> Editar Sucursal
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarSucursal">
+                        <input type="hidden" id="editIdSucursal" name="id_sucursal">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="editNombreSucursal" class="form-label">Nombre de la Sucursal <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editNombreSucursal" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editEstadoSucursal" class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editEstadoSucursal" required>
+                                    <option value="">Selecciona un estado</option>
+                                    {% for estado in estados %}
+                                        <option value="{{ estado.id_estado_direccion }}">{{ estado.estado_direccion }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editMunicipioSucursal" class="form-label">Municipio</label>
+                                <input type="text" class="form-control" id="editMunicipioSucursal" placeholder="Escribe el municipio">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editCodigoPostal" class="form-label">Código Postal <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editCodigoPostal" maxlength="5" required>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="editCalleDireccion" class="form-label">Calle <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editCalleDireccion" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="editNumeroDireccion" class="form-label">Número <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editNumeroDireccion" maxlength="10" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estado de la Sucursal</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="editActivoSucursal" checked>
+                                    <label class="form-check-label" for="editActivoSucursal" id="labelEstadoSucursal">
+                                        Activa
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarEdicionSucursal()">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Abrir modal de edición
+function abrirModalEditar(idSucursal, nombre, calle, numero, codigoPostal, activo, estadoNombre, municipio) {
+    document.getElementById('editIdSucursal').value = idSucursal;
+    document.getElementById('editNombreSucursal').value = nombre;
+    document.getElementById('editCalleDireccion').value = calle;
+    document.getElementById('editNumeroDireccion').value = numero;
+    document.getElementById('editActivoSucursal').checked = activo;
+    actualizarLabelEstado(activo);
+    
+    // Limpiar campos
+    document.getElementById('editMunicipioSucursal').value = '';
+    document.getElementById('editCodigoPostal').value = '';
+    
+    // Si hay estado, buscar su ID
+    if (estadoNombre) {
+        const estadoSelect = document.getElementById('editEstadoSucursal');
+        for (let option of estadoSelect.options) {
+            if (option.text === estadoNombre) {
+                estadoSelect.value = option.value;
+                break;
+            }
+        }
+    } else {
+        document.getElementById('editEstadoSucursal').value = '';
+    }
+    
+    // Si hay municipio
+    if (municipio) {
+        document.getElementById('editMunicipioSucursal').value = municipio;
+    }
+    
+    // Establecer código postal directamente
+    if (codigoPostal) {
+        document.getElementById('editCodigoPostal').value = codigoPostal;
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarSucursal'));
+    modal.show();
+}
+
+// Actualizar label del estado cuando cambia el switch
+function actualizarLabelEstado(activo) {
+    const label = document.getElementById('labelEstadoSucursal');
+    if (label) {
+        label.textContent = activo ? 'Activa' : 'Inactiva';
+    }
+}
+
+// Event listener para el switch de estado en el modal de edición
+document.getElementById('editActivoSucursal').addEventListener('change', function() {
+    actualizarLabelEstado(this.checked);
+});
+
+// Guardar edición de sucursal
+async function guardarEdicionSucursal() {
+    const form = document.getElementById('formEditarSucursal');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const codigoPostal = document.getElementById('editCodigoPostal').value.trim();
+    
+    if (!codigoPostal) {
+        alert('Por favor ingresa un código postal');
+        return;
+    }
+    
+    // Validar que el código postal tenga 5 dígitos
+    if (codigoPostal.length !== 5 || !/^\d+$/.test(codigoPostal)) {
+        alert('El código postal debe tener exactamente 5 dígitos numéricos');
+        return;
+    }
+    
+    const data = {
+        id_sucursal: parseInt(document.getElementById('editIdSucursal').value),
+        nombre_sucursal: document.getElementById('editNombreSucursal').value.trim(),
+        calle_direccion: document.getElementById('editCalleDireccion').value.trim(),
+        numero_direccion: document.getElementById('editNumeroDireccion').value.trim(),
+        codigo_postal: codigoPostal,
+        id_estado: document.getElementById('editEstadoSucursal').value || null,
+        municipio: document.getElementById('editMunicipioSucursal').value.trim() || null,
+        activo_sucursal: document.getElementById('editActivoSucursal').checked
+    };
+    
+    try {
+        const response = await fetch('/api/admin/sucursales/actualizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.mensaje || 'Sucursal actualizada exitosamente');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarSucursal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error: ' + (result.mensaje || result.error || 'No se pudo actualizar la sucursal'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al actualizar la sucursal');
+    }
+}
+</script>
+{% endblock %}
+

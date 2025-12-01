@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_facturas %}
+
+{% block title %}Facturas - Panel de Ventas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_facturas.css') }}">
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-text"></i> Facturas
+                </h1>
+                <p class="text-muted">Gestión de facturas de ventas</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('ventas_facturas') }}" id="formFiltros">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                        <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio"
+                            value="{{ fecha_inicio }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                        <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="busqueda" class="form-label">Buscar</label>
+                        <input type="text" class="form-control" id="busqueda" name="busqueda"
+                            placeholder="Folio, cliente, ID factura..." value="{{ busqueda }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+                {% if fecha_inicio or fecha_fin or busqueda %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <a href="{{ url_for('ventas_facturas') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Limpiar Filtros
+                        </a>
+                        <span class="text-muted ms-2">
+                            <i class="bi bi-info-circle"></i> Mostrando {{ facturas|length }} factura(s)
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Facturas -->
+    <div class="table-container">
+        {{ tabla_facturas(facturas) }}
+    </div>
+</div>
+{% endblock %}

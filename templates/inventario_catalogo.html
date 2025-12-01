@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_productos_solo_lectura %}
+
+{% block title %}Catálogo de Productos - Inventario{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario_catalogo.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-box"></i> Catálogo de Productos
+            </h1>
+            <p class="text-muted">Visualización de todos los productos (solo lectura)</p>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Filtros de búsqueda -->
+    <div class="search-filters">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="searchInput" placeholder="Nombre, SKU...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoría</label>
+                <select class="form-select" id="filterCategoria">
+                    <option value="">Todas las categorías</option>
+                    <!-- Se cargarán dinámicamente -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select class="form-select" id="filterEstado">
+                    <option value="">Todos</option>
+                    <option value="1">Activos</option>
+                    <option value="0">Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-secondary w-100" onclick="limpiarFiltros()">
+                    <i class="bi bi-x-circle"></i> Limpiar Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de productos usando macro (solo lectura) -->
+    <div class="table-container">
+        {{ tabla_productos_solo_lectura(productos) }}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/inventario_catalogo.js') }}"></script>
+{% endblock %}

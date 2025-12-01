@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Pedido - Panel de Ventas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ventas_crear_pedido.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <h1 class="page-title">
+            <i class="bi bi-cart-plus"></i> Crear Nuevo Pedido
+        </h1>
+        <p class="text-muted">Seleccione los productos para el pedido</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-container">
+
+        {# ===== Selector de cliente (solo Admin / Vendedor) ===== #}
+        {% if clientes and clientes|length > 0 %}
+        <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-end">
+                <div class="flex-grow-1 me-3">
+                    <label for="clienteSelect" class="form-label">Cliente *</label>
+                    <select id="clienteSelect" class="form-select">
+                        <option value="">Seleccione un cliente...</option>
+                        {% for cli in clientes %}
+                        <option value="{{ cli.id_cliente }}">
+                            {{ cli.nombre_completo }}{% if cli.correo %} ({{ cli.correo }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">
+                        El pedido se registrará a nombre del cliente seleccionado.
+                    </small>
+                </div>
+                <button type="button" class="btn btn-outline-primary" id="btnCompletarDatos" style="display: none;">
+                    <i class="bi bi-pencil"></i> Completar Datos
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <h5 class="mb-3">Productos Disponibles</h5>
+        <div class="productos-grid" id="productosGrid">
+            {% for producto in productos %}
+            <div class="producto-card" data-id="{{ producto.id_producto }}" data-precio="{{ producto.precio }}">
+                <h6>{{ producto.nombre }}</h6>
+                <p class="text-muted mb-1">SKU: {{ producto.sku }}</p>
+                <p class="mb-2">
+                    <strong>${{ "{:,.0f}".format(producto.precio) }}</strong>
+                </p>
+
+                <!-- Controles de cantidad con + / - -->
+                <div class="qty-wrapper" style="display: none;">
+                    <div class="input-group input-group-sm" style="max-width: 150px;">
+                        <button type="button" class="btn btn-outline-secondary btn-qty" data-action="minus">
+                            &minus;
+                        </button>
+                        <input type="text" class="form-control text-center cantidad-producto" value="1" readonly>
+                        <button type="button" class="btn btn-outline-secondary btn-qty" data-action="plus">
+                            +
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="carrito-items" id="carritoItems" style="display: none;">
+            <h5 class="mb-3">Productos Seleccionados</h5>
+            <div id="carritoList"></div>
+            <div class="d-flex justify-content-end gap-3 mt-4">
+                <a href="{{ url_for('ventas_pedidos') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="button" class="btn btn-primary" id="btnCrearPedido">
+                    <i class="bi bi-check-circle"></i> Crear Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ventas_crear_pedido.js') }}"></script>
+
+<!-- Modal para Pago Inmediato -->
+<div class="modal fade" id="modalPagoInmediato" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Pago del Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPagoInmediato">
+                    <input type="hidden" id="pagoInmediatoIdPedido" name="id_pedido">
+                    <input type="hidden" id="pagoInmediatoIdFactura" name="id_factura">
+
+                    <div class="mb-3">
+                        <label class="form-label">Total de la Factura</label>
+                        <div class="alert alert-info mb-0">
+                            <strong id="pagoInmediatoTotal">$0.00</strong>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="pagoInmediatoImporte" class="form-label">Importe a Pagar *</label>
+                        <input type="number" class="form-control" id="pagoInmediatoImporte" name="importe" step="0.01"
+                            min="0.01" required>
+                        <small class="text-muted">Ingrese el monto a registrar</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="pagoInmediatoMetodo" class="form-label">Método de Pago *</label>
+                        <select class="form-select" id="pagoInmediatoMetodo" name="id_metodo_pago" required>
+                            <option value="">Cargando métodos...</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnRegistrarPagoInmediato">
+                    <i class="bi bi-credit-card"></i> Registrar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

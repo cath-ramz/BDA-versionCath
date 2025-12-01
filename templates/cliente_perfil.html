@@ -1,0 +1,346 @@
+{% extends "cliente_base.html" %}
+
+{% block title %}Mi Perfil - Joyería Premium{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8fafc;
+    }
+
+    .page-header {
+        background: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 14px;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #ff9500;
+        box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
+        outline: none;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #ef4444;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="bi bi-person"></i> Mi Perfil
+        </h1>
+        <p class="text-muted">Administra tu información personal</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="form-container">
+        <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="datos-tab" data-bs-toggle="tab" data-bs-target="#datos" type="button" role="tab">
+                    <i class="bi bi-person"></i> Datos Personales
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="contrasena-tab" data-bs-toggle="tab" data-bs-target="#contrasena" type="button" role="tab">
+                    <i class="bi bi-lock"></i> Cambiar Contraseña
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Tab Datos Personales -->
+            <div class="tab-pane fade show active" id="datos" role="tabpanel">
+                <form id="formPerfil">
+                    <h5 class="section-title">Información Personal</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="nombre_usuario" class="form-label required-field">Nombre de Usuario</label>
+                            <input type="text" class="form-control" id="nombre_usuario" name="nombre_usuario" 
+                                   value="{{ perfil.nombre_usuario if perfil else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="correo" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="correo" name="correo" 
+                                   value="{{ perfil.correo if perfil else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="nombre_primero" class="form-label required-field">Nombre</label>
+                            <input type="text" class="form-control" id="nombre_primero" name="nombre_primero" 
+                                   value="{{ perfil.nombre_primero if perfil else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="nombre_segundo" class="form-label">Segundo Nombre</label>
+                            <input type="text" class="form-control" id="nombre_segundo" name="nombre_segundo" 
+                                   value="{{ perfil.nombre_segundo if perfil else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="apellido_paterno" class="form-label required-field">Apellido Paterno</label>
+                            <input type="text" class="form-control" id="apellido_paterno" name="apellido_paterno" 
+                                   value="{{ perfil.apellido_paterno if perfil else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="apellido_materno" class="form-label">Apellido Materno</label>
+                            <input type="text" class="form-control" id="apellido_materno" name="apellido_materno" 
+                                   value="{{ perfil.apellido_materno if perfil else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="telefono" name="telefono" 
+                                   value="{{ perfil.telefono if perfil else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="rfc_usuario" class="form-label">RFC</label>
+                            <input type="text" class="form-control" id="rfc_usuario" name="rfc_usuario" 
+                                   maxlength="13" value="{{ perfil.rfc_usuario if perfil else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_genero" class="form-label">Género</label>
+                            <select class="form-select" id="id_genero" name="id_genero">
+                                <option value="">Seleccione...</option>
+                                {% for genero in generos %}
+                                <option value="{{ genero.id_genero }}" 
+                                        {% if perfil and perfil.id_genero == genero.id_genero %}selected{% endif %}>
+                                    {{ genero.genero }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Clasificación</label>
+                            <div class="form-control bg-light" style="border: 1px solid #e2e8f0; padding: 10px 14px;" readonly>
+                                {% if perfil and perfil.nombre_clasificacion %}
+                                    <strong>{{ perfil.nombre_clasificacion }}</strong>
+                                    {% if perfil.descuento_clasificacion and perfil.descuento_clasificacion > 0 %}
+                                        <span class="badge bg-success ms-2">{{ perfil.descuento_clasificacion }}% descuento</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">No asignada</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">La clasificación se asigna automáticamente según tus compras acumuladas</small>
+                        </div>
+                    </div>
+
+                    <h5 class="section-title">Dirección</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="calle_direccion" class="form-label required-field">Calle</label>
+                            <input type="text" class="form-control" id="calle_direccion" name="calle_direccion" 
+                                   value="{{ perfil.calle_direccion if perfil else '' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="numero_direccion" class="form-label required-field">Número</label>
+                            <input type="text" class="form-control" id="numero_direccion" name="numero_direccion" 
+                                   value="{{ perfil.numero_direccion if perfil else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="codigo_postal" class="form-label required-field">Código Postal</label>
+                            <input type="text" class="form-control" id="codigo_postal" name="codigo_postal" 
+                                   maxlength="5" pattern="[0-9]{5}" 
+                                   value="{{ perfil.codigo_postal if perfil else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tab Cambiar Contraseña -->
+            <div class="tab-pane fade" id="contrasena" role="tabpanel">
+                <form id="formContrasena">
+                    <h5 class="section-title">Cambiar Contraseña</h5>
+                    <div class="mb-3">
+                        <label for="contrasena_actual" class="form-label required-field">Contraseña Actual</label>
+                        <input type="password" class="form-control" id="contrasena_actual" name="contrasena_actual" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contrasena_nueva" class="form-label required-field">Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="contrasena_nueva" name="contrasena_nueva" 
+                               minlength="6" required>
+                        <small class="text-muted">Mínimo 6 caracteres</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contrasena_nueva_confirmar" class="form-label required-field">Confirmar Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="contrasena_nueva_confirmar" name="contrasena_nueva_confirmar" 
+                               minlength="6" required>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-lock"></i> Cambiar Contraseña
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Formulario de perfil
+    document.getElementById('formPerfil').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const data = {
+            nombre_usuario: document.getElementById('nombre_usuario').value,
+            nombre_primero: document.getElementById('nombre_primero').value,
+            nombre_segundo: document.getElementById('nombre_segundo').value,
+            apellido_paterno: document.getElementById('apellido_paterno').value,
+            apellido_materno: document.getElementById('apellido_materno').value,
+            rfc_usuario: document.getElementById('rfc_usuario').value,
+            telefono: document.getElementById('telefono').value,
+            correo: document.getElementById('correo').value,
+            id_genero: document.getElementById('id_genero').value || null,
+            calle_direccion: document.getElementById('calle_direccion').value,
+            numero_direccion: document.getElementById('numero_direccion').value,
+            codigo_postal: document.getElementById('codigo_postal').value
+        };
+
+        const btnSubmit = this.querySelector('button[type="submit"]');
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        fetch('/api/cliente/perfil/actualizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Perfil actualizado exitosamente');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo actualizar el perfil'));
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="bi bi-check-circle"></i> Guardar Cambios';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al actualizar el perfil');
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="bi bi-check-circle"></i> Guardar Cambios';
+        });
+    });
+
+    // Formulario de contraseña
+    document.getElementById('formContrasena').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const contrasena_nueva = document.getElementById('contrasena_nueva').value;
+        const contrasena_nueva_confirmar = document.getElementById('contrasena_nueva_confirmar').value;
+
+        if (contrasena_nueva !== contrasena_nueva_confirmar) {
+            alert('Las contraseñas nuevas no coinciden');
+            return;
+        }
+
+        const data = {
+            contrasena_actual: document.getElementById('contrasena_actual').value,
+            contrasena_nueva: contrasena_nueva,
+            contrasena_nueva_confirmar: contrasena_nueva_confirmar
+        };
+
+        const btnSubmit = this.querySelector('button[type="submit"]');
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cambiando...';
+
+        fetch('/api/cliente/contrasena/actualizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Contraseña actualizada exitosamente');
+                document.getElementById('formContrasena').reset();
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo actualizar la contraseña'));
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="bi bi-lock"></i> Cambiar Contraseña';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al actualizar la contraseña');
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="bi bi-lock"></i> Cambiar Contraseña';
+        });
+    });
+</script>
+{% endblock %}
+

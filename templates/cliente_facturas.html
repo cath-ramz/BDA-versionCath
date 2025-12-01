@@ -1,0 +1,145 @@
+{% extends "cliente_base.html" %}
+
+{% block title %}Mis Facturas - Joyería Premium{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8fafc;
+    }
+
+    .page-header {
+        background: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+        padding: 12px;
+    }
+
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        border-radius: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="bi bi-file-text"></i> Mis Facturas
+        </h1>
+        <p class="text-muted">Historial de todas tus facturas</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="table-container">
+        {% if facturas %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Pagado</th>
+                        <th>Pendiente</th>
+                        <th>Estado Pago</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for factura in facturas %}
+                    <tr>
+                        <td><strong>{{ factura.folio or 'N/A' }}</strong></td>
+                        <td>{{ factura.fecha_emision.strftime('%d/%m/%Y') if factura.fecha_emision else 'N/A' }}</td>
+                        <td><strong>${{ "{:,.2f}".format(factura.total or 0) }}</strong></td>
+                        <td>${{ "{:,.2f}".format(factura.total_pagado or 0) }}</td>
+                        <td>
+                            <strong class="{% if (factura.pendiente or 0) > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ${{ "{:,.2f}".format(factura.pendiente or 0) }}
+                            </strong>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if factura.estado_pago == 'Pagada' %}bg-success
+                                {% elif factura.estado_pago == 'Parcial' %}bg-warning
+                                {% else %}bg-danger{% endif %}">
+                                {{ factura.estado_pago or 'Pendiente' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if (factura.pendiente or 0) > 0 %}
+                                <a href="{{ url_for('cliente_pago', id_factura=factura.id_factura) }}" 
+                                   class="btn btn-sm btn-primary btn-action">
+                                    <i class="bi bi-credit-card"></i> Pagar
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Pagada</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-file-x" style="font-size: 4rem; color: #cbd5e1;"></i>
+            <h3 class="mt-3 text-muted">No tienes facturas aún</h3>
+            <p class="text-muted">Las facturas aparecerán aquí después de realizar pedidos</p>
+            <a href="{{ url_for('cliente_dashboard') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-shop"></i> Ver Catálogo
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

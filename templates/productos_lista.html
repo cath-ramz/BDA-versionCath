@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "macros.html" import tabla_productos %}
+
+{% block title %}Lista de Productos - Administración{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/productos_lista.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-box"></i> Lista de Productos
+                </h1>
+                <p class="text-muted">Gestión de productos del catálogo</p>
+            </div>
+            <a href="{{ url_for('productos_crear') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Producto
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="table-container">
+        {{ tabla_productos(productos) }}
+    </div>
+</div>
+{% endblock %}

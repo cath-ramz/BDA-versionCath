@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis Financiero - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finanzas_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Análisis Financiero</h1>
+        <p class="dashboard-subtitle">Resumen financiero y reportes de rentabilidad</p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="container">
+    <div class="kpi-cards" id="kpiCards">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Ingresos del Mes</div>
+                    <div class="kpi-value" id="kpiIngresos">$0</div>
+                    <div class="kpi-trend positive" id="kpiIngresosTrend">
+                        <i class="bi bi-arrow-up"></i>
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon ingresos">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Margen Promedio</div>
+                    <div class="kpi-value" id="kpiMargen">0%</div>
+                    <div class="kpi-trend positive" id="kpiMargenTrend">
+                        <i class="bi bi-arrow-up"></i>
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon margen">
+                    <i class="bi bi-percent"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Pagos Pendientes</div>
+                    <div class="kpi-value" id="kpiPagos">$0</div>
+                    <div class="kpi-trend negative" id="kpiPagosTrend">
+                        <i class="bi bi-arrow-down"></i>
+                        <span>$0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon pagos">
+                    <i class="bi bi-file-text"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Gastos Operacionales</div>
+                    <div class="kpi-value" id="kpiGastos">$0</div>
+                    <div class="kpi-trend positive" id="kpiGastosTrend">
+                        <i class="bi bi-arrow-up"></i>
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon gastos">
+                    <i class="bi bi-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Margen por Categoría -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Margen por Categoría</h3>
+                    <div id="chartMargenCategoria" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Facturación vs Cobrado -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Facturación vs Cobrado (6 Meses)</h3>
+                    <div id="chartFacturacionCobrado" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="{{ url_for('static', filename='js/finanzas_dashboard.js') }}"></script>
+{% endblock %}

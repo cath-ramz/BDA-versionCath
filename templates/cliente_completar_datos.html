@@ -1,0 +1,264 @@
+{% extends "cliente_base.html" %}
+
+{% block title %}Completar Datos - Joyería Premium{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .card-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .alert-info {
+        background-color: #e0f2fe;
+        border-color: #bae6fd;
+        color: #0c4a6e;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<script>
+// Restaurar carrito desde sessionStorage si existe (después de login)
+document.addEventListener('DOMContentLoaded', function() {
+    const carritoPendiente = sessionStorage.getItem('carrito_pendiente');
+    if (carritoPendiente) {
+        console.log('[DEBUG] Completar Datos: Carrito pendiente encontrado en sessionStorage, intentando restaurar...');
+        try {
+            const carrito = JSON.parse(carritoPendiente);
+            fetch('/api/carrito/restaurar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ carrito: carrito })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('[DEBUG] Completar Datos: Carrito restaurado exitosamente en sesión del servidor.');
+                    // No remover carrito_pendiente todavía, lo haremos después de crear el pedido
+                } else {
+                    console.error('[DEBUG] Completar Datos: Error restaurando carrito:', data.error);
+                }
+            })
+            .catch(err => {
+                console.error('[DEBUG] Completar Datos: Error en fetch /api/carrito/restaurar:', err);
+            });
+        } catch (e) {
+            console.error('[DEBUG] Completar Datos: Error parseando carrito de sessionStorage:', e);
+        }
+    }
+});
+</script>
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-person-check"></i> Completar Mis Datos
+                </h1>
+                <p class="text-muted">Complete los datos requeridos para realizar su compra</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card-container">
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Importante:</strong> Para realizar una compra, necesitamos que complete los siguientes datos.
+        </div>
+
+        <form id="formCompletarDatos">
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label for="rfc" class="form-label">RFC <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="rfc" maxlength="13" required placeholder="Ej: ABC123456DEF" value="{{ cliente.rfc_usuario or '' }}">
+                    <small class="text-muted">Registro Federal de Contribuyentes (obligatorio para crear pedidos)</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="telefono" class="form-label">Teléfono <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="telefono" maxlength="15" required placeholder="Ej: 5512345678" value="{{ cliente.telefono or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="calle" class="form-label">Calle <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="calle" required placeholder="Ej: Av. Reforma" value="{{ cliente.calle_direccion or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="numero" maxlength="10" required placeholder="Ej: 123" value="{{ cliente.numero_direccion or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="codigoPostal" class="form-label">Código Postal <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="codigoPostal" maxlength="5" required placeholder="Ej: 01234" pattern="[0-9]{5}" value="{{ cliente.codigo_postal or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="municipio" class="form-label">Municipio <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="municipio" maxlength="100" required placeholder="Ej: San Pedro Garza García" value="{{ cliente.municipio_direccion or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                    <select class="form-select" id="estado" required>
+                        <option value="">Seleccione un estado...</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado.id_estado_direccion }}" 
+                                {% if cliente.id_estado_direccion == estado.id_estado_direccion %}selected{% endif %}>
+                            {{ estado.estado_direccion }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar y Continuar con el Pago
+                    </button>
+                    <a href="{{ url_for('cliente_dashboard') }}" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('formCompletarDatos').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const data = {
+        rfc_usuario: document.getElementById('rfc').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        calle_direccion: document.getElementById('calle').value.trim(),
+        numero_direccion: document.getElementById('numero').value.trim(),
+        codigo_postal: document.getElementById('codigoPostal').value.trim(),
+        municipio: document.getElementById('municipio').value.trim(),
+        id_estado: document.getElementById('estado').value
+    };
+    
+    // Validar código postal
+    if (data.codigo_postal.length !== 5 || !/^\d+$/.test(data.codigo_postal)) {
+        alert('El código postal debe tener exactamente 5 dígitos numéricos');
+        return;
+    }
+    
+    // Validar municipio
+    if (!data.municipio) {
+        alert('El municipio es requerido');
+        return;
+    }
+    
+    // Validar estado
+    if (!data.id_estado) {
+        alert('El estado es requerido');
+        return;
+    }
+    
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+    
+    try {
+        // Guardar datos del cliente
+        const response = await fetch('/api/cliente/completar-datos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('[DEBUG] Datos guardados exitosamente, intentando crear pedido...');
+            
+            // Intentar crear el pedido nuevamente
+            const crearResponse = await fetch('/api/carrito/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            console.log('[DEBUG] Respuesta de checkout, status:', crearResponse.status);
+            
+            if (!crearResponse.ok) {
+                // Si hay error, intentar parsear el JSON
+                const errorData = await crearResponse.json().catch(() => ({ error: 'Error desconocido' }));
+                console.error('[DEBUG] Error en checkout:', errorData);
+                
+                // Limpiar sessionStorage
+                sessionStorage.removeItem('pedidoPendiente');
+                sessionStorage.removeItem('carrito_pendiente');
+                
+                alert('Datos guardados, pero error al crear el pedido: ' + (errorData.mensaje || errorData.error || 'Error desconocido'));
+                window.location.href = '{{ url_for("cliente_dashboard") }}';
+                return;
+            }
+            
+            const crearResult = await crearResponse.json();
+            console.log('[DEBUG] Resultado de checkout:', crearResult);
+            
+            // Limpiar sessionStorage
+            sessionStorage.removeItem('pedidoPendiente');
+            sessionStorage.removeItem('carrito_pendiente');
+            
+            if (crearResult.success) {
+                // El carrito ya se vació en el servidor al crear el pedido
+                // Limpiar sessionStorage y actualizar badge del carrito
+                if (typeof window.actualizarBadgeCarrito === 'function') {
+                    window.actualizarBadgeCarrito(0);
+                }
+                // Recargar el carrito para reflejar que está vacío
+                if (typeof cargarCarrito === 'function') {
+                    cargarCarrito();
+                }
+                
+                if (crearResult.id_factura) {
+                    // Redirigir a la página de pago
+                    console.log('[DEBUG] Redirigiendo a página de pago:', `/cliente/pago/${crearResult.id_factura}`);
+                    window.location.href = `/cliente/pago/${crearResult.id_factura}`;
+                } else {
+                    console.log('[DEBUG] Pedido creado sin factura, redirigiendo a pedidos');
+                    alert('Pedido creado exitosamente');
+                    window.location.href = '{{ url_for("cliente_pedidos") }}';
+                }
+            } else {
+                console.error('[DEBUG] Checkout no exitoso:', crearResult);
+                alert('Datos guardados, pero error al crear el pedido: ' + (crearResult.mensaje || crearResult.error || 'Error desconocido'));
+                window.location.href = '{{ url_for("cliente_dashboard") }}';
+            }
+        } else {
+            const errorMsg = result.error || result.mensaje || 'No se pudieron guardar los datos';
+            alert('Error: ' + errorMsg);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Guardar y Continuar con el Pago';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión al guardar los datos. Por favor, verifique su conexión e intente nuevamente.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Guardar y Continuar con el Pago';
+    }
+});
+</script>
+{% endblock %}
+

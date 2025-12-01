@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Admin - Sistema Joyería{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-hero">
+    <div class="container">
+        <h1 class="dashboard-title">Panel de Administración</h1>
+        <p class="dashboard-subtitle">Bienvenido, {{ user.full_name if user else 'Admin' }} - Resumen general del
+            sistema</p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="container">
+    <div class="kpi-cards" id="kpiCards">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Ingresos Totales</div>
+                    <div class="kpi-value" id="kpiIngresos">$0</div>
+                    <div class="kpi-trend positive" id="kpiIngresosTrend">
+                        <span>+0%</span>
+                    </div>
+                </div>
+                <div class="kpi-icon ventas">💰</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Usuarios Activos</div>
+                    <div class="kpi-value" id="kpiUsuarios">0</div>
+                    <div class="kpi-trend positive" id="kpiUsuariosTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon clientes">👥</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Órdenes Procesadas</div>
+                    <div class="kpi-value" id="kpiOrdenes">0</div>
+                    <div class="kpi-trend positive" id="kpiOrdenesTrend">
+                        <span>+0</span>
+                    </div>
+                </div>
+                <div class="kpi-icon pedidos">🛒</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Variedad de Catálogo</div>
+                    <div class="kpi-value" id="kpiModelosUnicos">0</div>
+                    <div class="kpi-subtitle">Modelos únicos activos</div>
+                </div>
+                <div class="kpi-icon productos">📦</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Volumen en Almacén</div>
+                    <div class="kpi-value" id="kpiPiezasFisicas">0</div>
+                    <div class="kpi-subtitle">Piezas físicas en stock</div>
+                </div>
+                <div class="kpi-icon volumen">📊</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div>
+                    <div class="kpi-label">Valor del Inventario</div>
+                    <div class="kpi-value" id="kpiValorInventario">$0</div>
+                    <div class="kpi-subtitle">Dinero en stock</div>
+                </div>
+                <div class="kpi-icon valor">💰</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Ventas por Categoría (Bar Chart) -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Ventas por Categoría</h3>
+                    <div id="chartVentasCategoria" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Facturación Diaria (Line Chart) -->
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <h3 class="chart-title">Facturación Diaria (Última Semana)</h3>
+                    <div id="chartFacturacion" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secciones Adicionales -->
+    <div class="chart-section">
+        <div class="row">
+            <!-- Top Productos Más Vendidos -->
+            <div class="col-md-12">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="chart-title mb-0">🏆 Top Productos Más Vendidos</h3>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="date" id="topDesde" class="form-control form-control-sm" style="width: 130px;"
+                                title="Desde">
+                            <span class="text-muted">-</span>
+                            <input type="date" id="topHasta" class="form-control form-control-sm" style="width: 130px;"
+                                title="Hasta">
+                            <select id="topN" class="form-select form-select-sm" style="width: 80px;">
+                                <option value="3">3</option>
+                                <option value="5" selected>5</option>
+                                <option value="10">10</option>
+                            </select>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="cargarTopProductos()"
+                                title="Aplicar">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="topProductosList"
+                        style="min-height: 200px; max-height: 700px; overflow-y: auto; padding: 4px;">
+                        <p class="text-center text-muted">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <!-- Ticket Promedio - KPI Cards y Gráfica -->
+            <div class="col-md-12">
+                <div class="chart-card">
+                    <h3 class="chart-title mb-4">Análisis de Ticket Promedio</h3>
+
+                    <!-- KPI Cards -->
+                    <div class="row mb-4" id="ticketPromedioKPIs">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-receipt-cutoff" style="font-size: 2rem; color: #8b5cf6;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-1">Ticket Promedio</h5>
+                                    <h3 class="mb-0" id="kpiTicketPromedio">$0</h3>
+                                    <small class="text-muted">Por pedido</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-cart-check" style="font-size: 2rem; color: #3b82f6;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-1">Total Pedidos</h5>
+                                    <h3 class="mb-0" id="kpiTotalPedidos">0</h3>
+                                    <small class="text-muted">Pedidos realizados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-currency-dollar" style="font-size: 2rem; color: #10b981;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-1">Ingresos Totales</h5>
+                                    <h3 class="mb-0" id="kpiIngresosTotales">$0</h3>
+                                    <small class="text-muted">Ingresos acumulados</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfica Visual -->
+                    <div id="chartTicketPromedio" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+{% endblock %}
