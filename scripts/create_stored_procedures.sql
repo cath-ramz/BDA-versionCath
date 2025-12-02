@@ -6023,9 +6023,6 @@ DELIMITER ;
 
 DELIMITER $$
 
--- =========================================
--- productoAlta
--- =========================================
 CREATE OR REPLACE PROCEDURE productoAlta(
     IN nombre_categoriaSP   VARCHAR(100),
     IN materialSP           VARCHAR(100),
@@ -6050,7 +6047,7 @@ BEGIN
     DECLARE IDmodelo INT DEFAULT NULL;
     DECLARE IDproducto INT;
 
-    -- Normalizar categoría
+    -- Normalizar categorÃ­a
     SET nombre_categoriaSP = TRIM(nombre_categoriaSP);
     SET nombre_categoriaSP = CONCAT(
         UPPER(SUBSTR(nombre_categoriaSP,1,1)),
@@ -6121,14 +6118,15 @@ BEGIN
         SET skuSP = CONCAT('AUR-', skuSP);
     END IF;
 
+    -- Validar formato del SKU después de normalización
     IF skuSP NOT REGEXP '^AUR-[0-9]{3}[A-Za-z]$' THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Formato inválido. Debe ser AUR-999X';
+            SET MESSAGE_TEXT = CONCAT('Formato de SKU inválido. El formato debe ser: AUR-999X (8 caracteres). SKU recibido: "', skuSP, '" (', LENGTH(skuSP), ' caracteres). Ejemplos válidos: AUR-001A, AUR-123B, AUR-999Z');
     END IF;
 
     IF LENGTH(skuSP) <> 8 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Formato inválido. Debe contener 8 caracteres.';
+            SET MESSAGE_TEXT = CONCAT('El SKU debe tener exactamente 8 caracteres. SKU recibido: "', skuSP, '" tiene ', LENGTH(skuSP), ' caracteres. Formato requerido: AUR-999X');
     END IF;
 
     SELECT COUNT(*)
@@ -6149,7 +6147,7 @@ BEGIN
         WHERE sku = skuSP;
     END IF;
 
-    -- Género
+    -- GÃ©nero
     SET genero_productoSP = TRIM(genero_productoSP);
     SET genero_productoSP = CONCAT(
         UPPER(SUBSTR(genero_productoSP,1,1)),
@@ -6234,5 +6232,5 @@ BEGIN
     END IF;
 END$$
 
-DELIMITER ;
+
 
