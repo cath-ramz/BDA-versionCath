@@ -2778,7 +2778,7 @@ BEGIN
 END$$
 
 DELIMITER ;
-
+DELIMITER $$
 CREATE OR REPLACE PROCEDURE productoAlta(
     IN nombre_categoriaSP   VARCHAR(100),
     IN materialSP           VARCHAR(100),
