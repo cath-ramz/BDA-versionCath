@@ -7260,7 +7260,6 @@ def api_crear_producto():
             'mensaje': mensaje_usuario,
             'success': False
         }), 500
-
 @app.route('/api/productos/actualizar', methods=['POST'])
 def api_actualizar_producto():
     """Endpoint para actualizar producto usando SP productoActualizar - SOLO SP, NO SQL EMBEBIDO"""
@@ -7324,8 +7323,15 @@ def api_actualizar_producto():
         if talla_raw is not None and talla_raw != '':
             talla = str(talla_raw).strip()  # Convertir a string y limpiar espacios
         
+        # Convertir activo_producto a TINYINT (0 o 1) para MySQL
         if activo_producto is not None:
-            activo_producto = bool(activo_producto)
+            # Aceptar boolean, string "true"/"false", o 0/1
+            if isinstance(activo_producto, bool):
+                activo_producto = 1 if activo_producto else 0
+            elif isinstance(activo_producto, str):
+                activo_producto = 1 if activo_producto.lower() in ('true', '1', 'yes', 'on') else 0
+            else:
+                activo_producto = 1 if activo_producto else 0
         
         cursor = mysql.connection.cursor()
         
@@ -7334,17 +7340,17 @@ def api_actualizar_producto():
             # El SP maneja todas las validaciones y actualizaciones
             cursor.callproc('productoActualizar', [
                 sku,                    # skuSP - REQUERIDO
-                nombre_producto,       # nombre_productoSP - puede ser NULL
                 nombre_categoria,       # nombre_categoriaSP - puede ser NULL
                 material,               # materialSP - puede ser NULL
                 genero_producto,        # genero_productoSP - puede ser NULL
+                nombre_producto,        # nombre_productoSP - puede ser NULL
                 precio_unitario,        # precio_unitarioSP - puede ser NULL
-                descuento_producto,      # descuento_productoSP - puede ser NULL
+                descuento_producto,     # descuento_productoSP - puede ser NULL
                 costo_unitario,         # costo_unitarioSP - puede ser NULL
+                activo_producto,        # activo_productoSP - TINYINT (0 o 1)
                 talla,                  # tallaSP - puede ser NULL (VARCHAR)
                 kilataje,               # kilatajeSP - puede ser NULL
-                ley,                    # leySP - puede ser NULL
-                activo_producto         # activo_productoSP - puede ser NULL
+                ley                     # leySP - puede ser NULL
             ])
             
             # Limpiar resultados adicionales del SP
@@ -7389,6 +7395,7 @@ def api_actualizar_producto():
             'mensaje': mensaje_usuario,
             'success': False
         }), 500
+
 
 @app.route('/api/productos/ver/<int:id_producto>')
 def api_ver_producto(id_producto):
