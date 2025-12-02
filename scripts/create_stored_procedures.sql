@@ -2779,11 +2779,6 @@ END$$
 
 DELIMITER ;
 
-
-
--- =========================================
--- productoAlta
--- =========================================
 CREATE OR REPLACE PROCEDURE productoAlta(
     IN nombre_categoriaSP   VARCHAR(100),
     IN materialSP           VARCHAR(100),
@@ -2794,8 +2789,8 @@ CREATE OR REPLACE PROCEDURE productoAlta(
     IN descuento_productoSP DECIMAL(5,2),
     IN costo_unitarioSP     DECIMAL(10,2),
     IN tallaSP              VARCHAR(20),
-    IN kilatajeSP           VARCHAR(10),
-    IN leySP                DECIMAL(10,2)
+    IN kilatajeSP           VARCHAR(10),   -- ahora texto
+    IN leySP                VARCHAR(10)    -- ahora texto
 )
 BEGIN
     DECLARE existeIDCategoria INT;
@@ -2803,13 +2798,16 @@ BEGIN
     DECLARE existeSKU INT;
     DECLARE IDsku INT;
     DECLARE existeIDGeneroProducto INT;
-    DECLARE talla INT;
     DECLARE existeIDModelo INT DEFAULT NULL;
     DECLARE IDmodelo INT DEFAULT NULL;
     DECLARE IDproducto INT;
-    DECLARE v_mensaje_error VARCHAR(500);
 
-    -- Normalizar categorÃ­a
+    DECLARE v_kilataje INT;
+    DECLARE v_ley DECIMAL(10,2);
+
+    -- ===========================
+    -- Normalizar categoría
+    -- ===========================
     SET nombre_categoriaSP = TRIM(nombre_categoriaSP);
     SET nombre_categoriaSP = CONCAT(
         UPPER(SUBSTR(nombre_categoriaSP,1,1)),
@@ -2822,8 +2820,8 @@ BEGIN
     WHERE nombre_categoria = nombre_categoriaSP;
 
     IF existeIDCategoria IS NULL THEN
-        INSERT INTO Categorias(nombre_categoria, activo_categoria)
-        VALUES (nombre_categoriaSP, TRUE);
+        INSERT INTO Categorias(nombre_categoria)
+        VALUES (nombre_categoriaSP);
 
         SELECT id_categoria
         INTO existeIDCategoria
@@ -2831,12 +2829,14 @@ BEGIN
         WHERE nombre_categoria = nombre_categoriaSP;
     END IF;
 
-    IF nombre_categoriaSP = 'Anillos' AND tallaSP IS NULL THEN
+    IF nombre_categoriaSP = 'Anillos' AND (tallaSP IS NULL OR TRIM(tallaSP) = '') THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Debe especificar la talla para anillos';
     END IF;
 
-    -- Material
+    -- ===========================
+    -- Normalizar material
+    -- ===========================
     SET materialSP = TRIM(materialSP);
     SET materialSP = CONCAT(
         UPPER(SUBSTR(materialSP,1,1)),
@@ -2858,17 +2858,50 @@ BEGIN
         WHERE material = materialSP;
     END IF;
 
-    IF materialSP = 'Oro' AND kilatajeSP IS NULL THEN
+    -- ===========================
+    -- Normalizar kilataje (texto -> INT o NULL)
+    -- ===========================
+    IF kilatajeSP IS NULL OR TRIM(kilatajeSP) = '' THEN
+        SET v_kilataje = NULL;
+    ELSE
+        SET kilatajeSP = TRIM(kilatajeSP);
+        IF kilatajeSP NOT REGEXP '^[0-9]+$' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Kilataje inválido, debe ser un número entero';
+        END IF;
+        SET v_kilataje = CAST(kilatajeSP AS SIGNED);
+    END IF;
+
+    -- ===========================
+    -- Normalizar ley (texto -> DECIMAL o NULL)
+    -- ===========================
+    IF leySP IS NULL OR TRIM(leySP) = '' THEN
+        SET v_ley = NULL;
+    ELSE
+        SET leySP = TRIM(leySP);
+        SET leySP = REPLACE(leySP, ',', '.');
+
+        IF leySP NOT REGEXP '^[0-9]+(\\.[0-9]+)?$' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Ley inválida, debe ser un número (ej. 925 o 0.925)';
+        END IF;
+
+        SET v_ley = CAST(leySP AS DECIMAL(10,2));
+    END IF;
+
+    IF materialSP = 'Oro' AND v_kilataje IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Debe especificar el kilataje para productos de oro';
     END IF;
 
-    IF materialSP = 'Plata' AND leySP IS NULL THEN
+    IF materialSP = 'Plata' AND v_ley IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Debe especificar la ley para productos de plata';
     END IF;
 
+    -- ===========================
     -- SKU normalizado
+    -- ===========================
     SET skuSP = UPPER(TRIM(skuSP));
     SET skuSP = REPLACE(skuSP,'AUR', 'AUR-');
 
@@ -2880,17 +2913,14 @@ BEGIN
         SET skuSP = CONCAT('AUR-', skuSP);
     END IF;
 
-    -- Validar formato del SKU después de normalización
     IF skuSP NOT REGEXP '^AUR-[0-9]{3}[A-Za-z]$' THEN
-        SET v_mensaje_error = CONCAT('Formato de SKU inválido. El formato debe ser: AUR-999X (8 caracteres). SKU recibido: "', skuSP, '" (', LENGTH(skuSP), ' caracteres). Ejemplos válidos: AUR-001A, AUR-123B, AUR-999Z');
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = v_mensaje_error;
+            SET MESSAGE_TEXT = 'Formato inválido. Debe ser AUR-999X';
     END IF;
 
     IF LENGTH(skuSP) <> 8 THEN
-        SET v_mensaje_error = CONCAT('El SKU debe tener exactamente 8 caracteres. SKU recibido: "', skuSP, '" tiene ', LENGTH(skuSP), ' caracteres. Formato requerido: AUR-999X');
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = v_mensaje_error;
+            SET MESSAGE_TEXT = 'Formato inválido. Debe contener 8 caracteres.';
     END IF;
 
     SELECT COUNT(*)
@@ -2900,7 +2930,7 @@ BEGIN
 
     IF existeSKU > 0 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Ya se registro ese producto.';
+            SET MESSAGE_TEXT = 'Ya se registró ese producto.';
     ELSE
         INSERT INTO Sku(sku)
         VALUES (skuSP);
@@ -2911,7 +2941,9 @@ BEGIN
         WHERE sku = skuSP;
     END IF;
 
-    -- GÃ©nero
+    -- ===========================
+    -- Género
+    -- ===========================
     SET genero_productoSP = TRIM(genero_productoSP);
     SET genero_productoSP = CONCAT(
         UPPER(SUBSTR(genero_productoSP,1,1)),
@@ -2933,7 +2965,9 @@ BEGIN
         WHERE genero_producto = genero_productoSP;
     END IF;
 
+    -- ===========================
     -- Modelo
+    -- ===========================
     SELECT id_modelo
     INTO existeIDModelo
     FROM Modelos
@@ -2948,12 +2982,16 @@ BEGIN
         SELECT id_modelo
         INTO existeIDModelo
         FROM Modelos
-        WHERE nombre_producto = nombre_productoSP;
+        WHERE nombre_producto = nombre_productoSP
+          AND id_categoria = existeIDCategoria
+          AND id_genero_producto = existeIDGeneroProducto;
     END IF;
 
     SET IDmodelo = existeIDModelo;
 
+    -- ===========================
     -- Producto
+    -- ===========================
     INSERT INTO Productos (
         id_sku,
         id_modelo,
@@ -2986,15 +3024,16 @@ BEGIN
     -- Oro
     IF materialSP = 'Oro' THEN
         INSERT INTO Productos_Oro_Kilataje(id_producto, kilataje)
-        VALUES (IDproducto, kilatajeSP);
+        VALUES (IDproducto, v_kilataje);
     END IF;
 
     -- Plata
     IF materialSP = 'Plata' THEN
         INSERT INTO Productos_Plata_Ley(id_producto, ley)
-        VALUES (IDproducto, leySP);
+        VALUES (IDproducto, v_ley);
     END IF;
 END$$
+
 -- =========================================
 -- productoImagenAgregar
 -- =========================================
