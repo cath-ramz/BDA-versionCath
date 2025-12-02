@@ -122,19 +122,32 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Validar longitud del SKU (máximo 8 caracteres según el SP)
-        console.log('Validando SKU:', formData.sku, 'Longitud:', formData.sku.length);
-        if (formData.sku.length > 8) {
-            alert(`El SKU no puede exceder 8 caracteres. El SKU ingresado tiene ${formData.sku.length} caracteres. El formato debe ser AUR-999X (8 caracteres máximo).`);
+        // Normalizar SKU (similar al stored procedure)
+        let skuNormalizado = formData.sku.toUpperCase().trim();
+        skuNormalizado = skuNormalizado.replace(/AUR/g, 'AUR-');
+        skuNormalizado = skuNormalizado.replace(/\s+/g, '');
+        
+        if (!skuNormalizado.startsWith('AUR-')) {
+            skuNormalizado = 'AUR-' + skuNormalizado;
+        }
+        
+        // Validar formato del SKU: AUR- seguido de 3 dígitos y una letra (total 8 caracteres)
+        const skuPattern = /^AUR-[0-9]{3}[A-Za-z]$/;
+        if (!skuPattern.test(skuNormalizado)) {
+            alert('Formato de SKU inválido. El formato debe ser: AUR-999X\n\nEjemplos válidos:\n- AUR-001A\n- AUR-123B\n- AUR-999Z\n\nEl SKU debe tener exactamente 8 caracteres: AUR- seguido de 3 dígitos y una letra.');
             document.getElementById('sku').focus();
             return;
         }
-
-        // Truncar SKU a 8 caracteres como medida de seguridad
-        if (formData.sku.length > 8) {
-            formData.sku = formData.sku.substring(0, 8);
-            console.log('SKU truncado a:', formData.sku);
+        
+        if (skuNormalizado.length !== 8) {
+            alert(`El SKU debe tener exactamente 8 caracteres. El SKU normalizado tiene ${skuNormalizado.length} caracteres: "${skuNormalizado}"\n\nFormato requerido: AUR-999X`);
+            document.getElementById('sku').focus();
+            return;
         }
+        
+        // Usar el SKU normalizado
+        formData.sku = skuNormalizado;
+        console.log('SKU normalizado:', formData.sku);
 
         if (formData.precio_unitario === null || formData.costo_unitario === null) {
             alert('Precio y costo son requeridos');
