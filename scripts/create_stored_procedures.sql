@@ -1447,6 +1447,9 @@ DELIMITER ;
 DELIMITER $$
 
 -- =========================================
+DELIMITER $$
+
+-- =========================================
 -- cliente_perfil_actualizar
 -- =========================================
 CREATE OR REPLACE PROCEDURE cliente_perfil_actualizar(
@@ -1460,7 +1463,7 @@ CREATE OR REPLACE PROCEDURE cliente_perfil_actualizar(
     IN var_telefono            VARCHAR(20),
     IN var_correo              VARCHAR(150),
     IN var_id_genero           INT,
-    IN var_codigo_postal       CHAR(10),
+    IN var_codigo_postal       VARCHAR(10),
     IN var_municipio           VARCHAR(100),
     IN var_id_estado_direccion INT,
     IN var_calle_direccion     VARCHAR(150),
@@ -1472,8 +1475,7 @@ BEGIN
     DECLARE var_id_municipio     INT;
     DECLARE var_id_cp_municipio  INT;
     DECLARE var_id_cp_estado     INT;
-    SET var_codigo_postal = TRIM(var_codigo_postal);
-    SET var_codigo_postal = LEFT(var_codigo_postal, 5);
+    
     -- Actualizar datos bÃ¡sicos del usuario
     UPDATE Usuarios
     SET
@@ -1514,16 +1516,15 @@ BEGIN
         END IF;
 
         SELECT id_cp_municipio INTO var_id_cp_municipio
-FROM Codigos_Postales_Municipios
-WHERE id_cp = var_id_cp
-  AND id_municipio_direccion = var_id_municipio
-LIMIT 1;
+        FROM Codigos_Postales_Municipios
+        WHERE id_cp = var_id_cp
+          AND id_municipio_direccion = var_id_municipio
+        LIMIT 1;
 
-IF var_id_cp_municipio IS NULL THEN
-    INSERT INTO Codigos_Postales_Municipios (id_cp, id_municipio_direccion)
-    VALUES (var_id_cp, var_id_municipio);
-END IF;
-
+        IF var_id_cp_municipio IS NULL THEN
+            INSERT INTO Codigos_Postales_Municipios (id_cp, id_municipio_direccion)
+            VALUES (var_id_cp, var_id_municipio);
+        END IF;
     END IF;
 
     -- Estado y relaciÃ³n CP-Estado
@@ -5989,5 +5990,226 @@ BEGIN
 END$$
 
 DELIMITER ;
+CREATE OR REPLACE PROCEDURE productoActualizar(
+    IN skuSP                VARCHAR(20),
+    IN nombre_categoriaSP   VARCHAR(100),
+    IN materialSP           VARCHAR(100),
+    IN genero_productoSP    VARCHAR(50),
+    IN nombre_productoSP    VARCHAR(150),
+    IN precio_unitarioSP    DECIMAL(10,2),
+    IN descuento_productoSP DECIMAL(5,2),
+    IN costo_unitarioSP     DECIMAL(10,2),
+    IN activo_productoSP    TINYINT,
+    IN tallaSP              VARCHAR(20),
+    IN kilatajeSP           VARCHAR(10),
+    IN leySP                DECIMAL(10,2)
+)
+BEGIN
+    DECLARE IDsku INT;
+    DECLARE IDproducto INT;
+    DECLARE IDmodelo INT;
+    DECLARE IDcategoria INT;
+    DECLARE IDmaterial INT;
+    DECLARE IDgenero INT;
+    DECLARE filaOro INT;
+    DECLARE filaPlata INT;
+
+    -- Buscar SKU
+    SELECT id_sku
+    INTO IDsku
+    FROM Sku
+    WHERE sku = UPPER(TRIM(skuSP));
+
+    IF IDsku IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El SKU no existe, no se puede actualizar';
+    END IF;
+
+    -- Producto / modelo / material actual
+    SELECT id_producto, id_modelo, id_material
+    INTO IDproducto, IDmodelo, IDmaterial
+    FROM Productos
+    WHERE id_sku = IDsku;
+
+    -- CategorÃ­a
+    IF nombre_categoriaSP IS NOT NULL THEN
+        SET nombre_categoriaSP = CONCAT(
+            UPPER(SUBSTR(TRIM(nombre_categoriaSP),1,1)),
+            LOWER(SUBSTR(TRIM(nombre_categoriaSP),2))
+        );
+
+        SELECT id_categoria
+        INTO IDcategoria
+        FROM Categorias
+        WHERE nombre_categoria = nombre_categoriaSP;
+
+        IF IDcategoria IS NULL THEN
+            INSERT INTO Categorias(nombre_categoria)
+            VALUES (nombre_categoriaSP);
+
+            SELECT id_categoria
+            INTO IDcategoria
+            FROM Categorias
+            WHERE nombre_categoria = nombre_categoriaSP;
+        END IF;
+    END IF;
+
+    -- Material
+    IF materialSP IS NOT NULL THEN
+        SET materialSP = CONCAT(
+            UPPER(SUBSTR(TRIM(materialSP),1,1)),
+            LOWER(SUBSTR(TRIM(materialSP),2))
+        );
+
+        SELECT id_material
+        INTO IDmaterial
+        FROM Materiales
+        WHERE material = materialSP;
+
+        IF IDmaterial IS NULL THEN
+            INSERT INTO Materiales(material)
+            VALUES (materialSP);
+
+            SELECT id_material
+            INTO IDmaterial
+            FROM Materiales
+            WHERE material = materialSP;
+        END IF;
+    ELSE
+        SELECT m.material, m.id_material
+        INTO materialSP, IDmaterial
+        FROM Materiales m
+        JOIN Productos p ON p.id_material = m.id_material
+        WHERE p.id_producto = IDproducto;
+    END IF;
+
+    -- GÃ©nero
+    IF genero_productoSP IS NOT NULL THEN
+        SET genero_productoSP = CONCAT(
+            UPPER(SUBSTR(TRIM(genero_productoSP),1,1)),
+            LOWER(SUBSTR(TRIM(genero_productoSP),2))
+        );
+
+        SELECT id_genero_producto
+        INTO IDgenero
+        FROM Generos_Productos
+        WHERE genero_producto = genero_productoSP;
+    END IF;
+
+    -- Actualizar modelo
+    IF nombre_productoSP IS NOT NULL THEN
+        UPDATE Modelos
+        SET nombre_producto = nombre_productoSP
+        WHERE id_modelo = IDmodelo;
+    END IF;
+
+    IF IDcategoria IS NOT NULL THEN
+        UPDATE Modelos
+        SET id_categoria = IDcategoria
+        WHERE id_modelo = IDmodelo;
+    END IF;
+
+    IF IDgenero IS NOT NULL THEN
+        UPDATE Modelos
+        SET id_genero_producto = IDgenero
+        WHERE id_modelo = IDmodelo;
+    END IF;
+
+    -- Producto
+    IF IDmaterial IS NOT NULL THEN
+        UPDATE Productos
+        SET id_material = IDmaterial
+        WHERE id_producto = IDproducto;
+    END IF;
+
+    IF precio_unitarioSP IS NOT NULL THEN
+        UPDATE Productos
+        SET precio_unitario = precio_unitarioSP
+        WHERE id_producto = IDproducto;
+    END IF;
+
+    IF descuento_productoSP IS NOT NULL THEN
+        UPDATE Productos
+        SET descuento_producto = descuento_productoSP
+        WHERE id_producto = IDproducto;
+    END IF;
+
+    IF costo_unitarioSP IS NOT NULL THEN
+        UPDATE Productos
+        SET costo_unitario = costo_unitarioSP
+        WHERE id_producto = IDproducto;
+    END IF;
+
+    IF activo_productoSP IS NOT NULL THEN
+        UPDATE Productos
+        SET activo_producto = activo_productoSP
+        WHERE id_producto = IDproducto;
+    END IF;
+
+    -- Tallas (solo Anillos)
+    IF nombre_categoriaSP = 'Anillos' AND tallaSP IS NOT NULL THEN
+        SET tallaSP = TRIM(tallaSP);
+
+        INSERT INTO Tallas_Productos (id_producto, talla)
+        VALUES (IDproducto, tallaSP)
+        ON DUPLICATE KEY UPDATE talla = tallaSP;
+    END IF;
+
+    -- Oro / kilataje
+    IF kilatajeSP IS NOT NULL THEN
+        IF materialSP <> 'Oro' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'No se puede asignar kilataje a un producto que no es Oro';
+        ELSE
+            UPDATE Productos_Oro_Kilataje
+            SET kilataje = kilatajeSP
+            WHERE id_producto = IDproducto;
+        END IF;
+    END IF;
+
+    IF materialSP = 'Oro' THEN
+        DELETE FROM Productos_Plata_Ley
+        WHERE id_producto = IDproducto;
+
+        SELECT COUNT(*)
+        INTO filaOro
+        FROM Productos_Oro_Kilataje
+        WHERE id_producto = IDproducto;
+
+        IF filaOro = 0 THEN
+            INSERT INTO Productos_Oro_Kilataje (id_producto)
+            VALUES (IDproducto);
+        END IF;
+    END IF;
+
+    -- Plata / ley
+    IF leySP IS NOT NULL THEN
+        IF materialSP <> 'Plata' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'No se puede asignar ley a un producto que no es Plata';
+        ELSE
+            UPDATE Productos_Plata_Ley
+            SET ley = leySP
+            WHERE id_producto = IDproducto;
+        END IF;
+    END IF;
+
+    IF materialSP = 'Plata' THEN
+        DELETE FROM Productos_Oro_Kilataje
+        WHERE id_producto = IDproducto;
+
+        SELECT COUNT(*)
+        INTO filaPlata
+        FROM Productos_Plata_Ley
+        WHERE id_producto = IDproducto;
+
+        IF filaPlata = 0 THEN
+            INSERT INTO Productos_Plata_Ley (id_producto)
+            VALUES (IDproducto);
+        END IF;
+    END IF;
+END$$
+
+
 
 
