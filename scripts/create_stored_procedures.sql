@@ -5779,6 +5779,9 @@ BEGIN
          JOIN Estados_Devoluciones ed ON dd.id_estado_devolucion = ed.id_estado_devolucion
          WHERE ed.estado_devolucion = 'Rechazado') as devoluciones_rechazadas;
 END$$
+        -- Script para corregir el tipo de dato de kilatajeSP en productoAlta y productoActualizar
+-- Ejecutar: mysql -u joyeria_user -p joyeria_db < scripts/fix_producto_kilataje.sql
+
 DELIMITER $$
 
 -- =========================================
@@ -5838,8 +5841,8 @@ BEGIN
         WHERE nombre_categoria = nombre_categoriaSP;
 
         IF IDcategoria IS NULL THEN
-            INSERT INTO Categorias(nombre_categoria)
-            VALUES (nombre_categoriaSP);
+            INSERT INTO Categorias(nombre_categoria, activo_categoria)
+            VALUES (nombre_categoriaSP, TRUE);
 
             SELECT id_categoria
             INTO IDcategoria
@@ -6060,8 +6063,8 @@ BEGIN
     WHERE nombre_categoria = nombre_categoriaSP;
 
     IF existeIDCategoria IS NULL THEN
-        INSERT INTO Categorias(nombre_categoria)
-        VALUES (nombre_categoriaSP);
+        INSERT INTO Categorias(nombre_categoria, activo_categoria)
+        VALUES (nombre_categoriaSP, TRUE);
 
         SELECT id_categoria
         INTO existeIDCategoria
@@ -6232,6 +6235,4 @@ BEGIN
 END$$
 
 DELIMITER ;
-
-
 
