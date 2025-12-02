@@ -147,7 +147,7 @@ INSERT INTO Direcciones (calle_direccion, numero_direccion, id_cp) VALUES
 ('Av. Independencia', '999', 20);
 
 INSERT INTO Empresas (nombre_empresa, rfc_empresa, id_direccion, correo_empresa) VALUES
-('Auralisse Joyería', 'AUL120915ABC', 1, 'contacto@auralisse.com');
+('Auralisse Joyeria', 'AUL120915ABC', 1, 'contacto@auralisse.com');
 
 INSERT INTO Generos (genero) VALUES
 ('Femenino'),

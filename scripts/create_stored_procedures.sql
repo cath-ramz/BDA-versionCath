@@ -813,6 +813,7 @@ DELIMITER ;
 -- =====================================================
 -- 11) admin_sucursales_lista
 -- =====================================================
+DELIMITER $$
 CREATE OR REPLACE PROCEDURE admin_sucursales_lista()
 BEGIN
     SELECT
@@ -936,21 +937,29 @@ END$$
 -- =========================================
 -- clienteCrear
 -- =========================================
+
+DELIMITER //
+
 CREATE OR REPLACE PROCEDURE clienteCrear(
-    IN p_nombre_usuario     VARCHAR(50),
-    IN p_nombre_primero     VARCHAR(50),
-    IN p_nombre_segundo     VARCHAR(50),
-    IN p_apellido_paterno   VARCHAR(50),
-    IN p_apellido_materno   VARCHAR(50),
-    IN p_rfc_usuario        VARCHAR(13),
-    IN p_telefono           VARCHAR(20),
-    IN p_correo             VARCHAR(150),
-    IN p_codigo_postal      VARCHAR(10),
-    IN p_calle_direccion    VARCHAR(150),
-    IN p_numero_direccion   VARCHAR(20),
-    IN p_nombre_genero      VARCHAR(50),
-    IN p_contrasena         VARCHAR(255),
-    IN p_id_clasificacion   INT
+    -- Datos del Usuario
+    IN p_nombre_usuario   VARCHAR(50),
+    IN p_nombre_primero   VARCHAR(50),
+    IN p_nombre_segundo   VARCHAR(50),   -- OPCIONAL (puede venir NULL o '')
+    IN p_apellido_paterno VARCHAR(50),
+    IN p_apellido_materno VARCHAR(50),
+    IN p_rfc_usuario      CHAR(13),      -- OPCIONAL
+    IN p_telefono         VARCHAR(15),
+    IN p_correo           VARCHAR(150),
+    IN p_contrasena       VARCHAR(255),
+    IN p_nombre_genero    VARCHAR(200),  -- OPCIONAL
+
+    -- Datos de Dirección (TODOS OPCIONALES)
+    IN p_calle_direccion  VARCHAR(200),
+    IN p_numero_direccion VARCHAR(10),
+    IN p_codigo_postal    CHAR(5),
+
+    -- Datos del Cliente
+    IN p_id_clasificacion INT           -- Puede ser NULL si es cliente estándar
 )
 BEGIN
     DECLARE v_id_cp        INT;
@@ -968,7 +977,9 @@ BEGIN
 
     START TRANSACTION;
 
-    -- CP
+    -- ======================================================
+    -- 1. GESTIÓN DEL CÓDIGO POSTAL (SOLO SI LO MANDAN)
+    -- ======================================================
     SET v_id_cp = NULL;
 
     IF p_codigo_postal IS NOT NULL AND p_codigo_postal <> '' THEN
@@ -981,16 +992,19 @@ BEGIN
         IF v_id_cp IS NULL THEN
             INSERT INTO Codigos_Postales (codigo_postal)
             VALUES (p_codigo_postal);
+
             SET v_id_cp = LAST_INSERT_ID();
         END IF;
     END IF;
 
-    -- DirecciÃ³n
+    -- ======================================================
+    -- 2. GESTIÓN DE LA DIRECCIÓN (SOLO SI HAY DATOS)
+    -- ======================================================
     SET v_id_direccion = NULL;
 
     IF p_calle_direccion IS NOT NULL AND p_calle_direccion <> ''
-       AND p_numero_direccion IS NOT NULL AND p_numero_direccion <> ''
-       AND v_id_cp IS NOT NULL THEN
+    AND p_numero_direccion IS NOT NULL AND p_numero_direccion <> ''
+    AND v_id_cp IS NOT NULL THEN
 
         INSERT INTO Direcciones (calle_direccion, numero_direccion, id_cp)
         VALUES (p_calle_direccion, p_numero_direccion, v_id_cp);
@@ -998,7 +1012,9 @@ BEGIN
         SET v_id_direccion = LAST_INSERT_ID();
     END IF;
 
-    -- GÃ©nero
+    -- ======================================================
+    -- 3. GESTIÓN DEL GÉNERO (OPCIONAL)
+    -- ======================================================
     SET v_id_genero = NULL;
 
     IF p_nombre_genero IS NOT NULL AND p_nombre_genero <> '' THEN
@@ -1007,9 +1023,13 @@ BEGIN
         FROM Generos
         WHERE genero = p_nombre_genero
         LIMIT 1;
+        -- Si no existe, simplemente se queda NULL
     END IF;
 
-    -- Usuario
+    -- ======================================================
+    -- 4. CREACIÓN DEL USUARIO
+    --    (RFC, segundo nombre y dirección pueden ser NULL)
+    -- ======================================================
     INSERT INTO Usuarios (
         nombre_usuario,
         nombre_primero,
@@ -1026,10 +1046,10 @@ BEGIN
     ) VALUES (
         p_nombre_usuario,
         p_nombre_primero,
-        NULLIF(p_nombre_segundo, ''),
+        NULLIF(p_nombre_segundo, ''),  -- convierte '' en NULL
         p_apellido_paterno,
         p_apellido_materno,
-        NULLIF(p_rfc_usuario, ''),
+        NULLIF(p_rfc_usuario, ''),     -- convierte '' en NULL
         p_telefono,
         p_correo,
         v_id_genero,
@@ -1040,25 +1060,31 @@ BEGIN
 
     SET v_id_usuario = LAST_INSERT_ID();
 
-    -- Cliente
+    -- ======================================================
+    -- 5. CREACIÓN DEL CLIENTE
+    -- ======================================================
     INSERT INTO Clientes (
         id_clasificacion,
         id_usuario
     ) VALUES (
-        p_id_clasificacion,
+        p_id_clasificacion,   -- puede ser NULL
         v_id_usuario
     );
 
     SET v_id_cliente = LAST_INSERT_ID();
 
-    -- Rol Cliente
+    -- ======================================================
+    -- 6. ASIGNAR ROL DE CLIENTE AL USUARIO
+    -- ======================================================
+    -- Obtener el ID del rol "Cliente" (normalmente es 6)
     SET v_id_rol_cliente = NULL;
-
+    
     SELECT id_roles INTO v_id_rol_cliente
     FROM Roles
     WHERE nombre_rol = 'Cliente'
     LIMIT 1;
-
+    
+    -- Si existe el rol Cliente, asignarlo al usuario
     IF v_id_rol_cliente IS NOT NULL THEN
         INSERT INTO Usuarios_Roles (
             id_usuario,
@@ -1069,16 +1095,19 @@ BEGIN
         ) VALUES (
             v_id_usuario,
             v_id_rol_cliente,
-            NULL,
-            1,
+            NULL,  -- Los clientes no tienen sucursal asignada
+            1,     -- Activo
             CURDATE()
         );
     END IF;
 
     COMMIT;
 
+    -- Regresamos el id del cliente creado
     SELECT v_id_cliente AS id_nuevo_cliente;
-END$$
+END //
+
+DELIMITER $$
 
 -- =========================================
 -- cliente_contrasena_actualizar
@@ -1431,7 +1460,7 @@ CREATE OR REPLACE PROCEDURE cliente_perfil_actualizar(
     IN var_telefono            VARCHAR(20),
     IN var_correo              VARCHAR(150),
     IN var_id_genero           INT,
-    IN var_codigo_postal       VARCHAR(10),
+    IN var_codigo_postal       CHAR(10),
     IN var_municipio           VARCHAR(100),
     IN var_id_estado_direccion INT,
     IN var_calle_direccion     VARCHAR(150),
@@ -1443,7 +1472,8 @@ BEGIN
     DECLARE var_id_municipio     INT;
     DECLARE var_id_cp_municipio  INT;
     DECLARE var_id_cp_estado     INT;
-
+    SET var_codigo_postal = TRIM(var_codigo_postal);
+    SET var_codigo_postal = LEFT(var_codigo_postal, 5);
     -- Actualizar datos bÃ¡sicos del usuario
     UPDATE Usuarios
     SET
@@ -1484,15 +1514,16 @@ BEGIN
         END IF;
 
         SELECT id_cp_municipio INTO var_id_cp_municipio
-        FROM Codigos_Postales_Municipios
-        WHERE id_cp = var_id_cp
-          AND id_municipio_direccion = var_id_municipio
-        LIMIT 1;
+FROM Codigos_Postales_Municipios
+WHERE id_cp = var_id_cp
+  AND id_municipio_direccion = var_id_municipio
+LIMIT 1;
 
-        IF var_id_cp_municipio IS NULL THEN
-            INSERT INTO Codigos_Postales_Municipios (id_cp, id_municipio_direccion)
-            VALUES (var_id_cp, var_id_municipio);
-        END IF;
+IF var_id_cp_municipio IS NULL THEN
+    INSERT INTO Codigos_Postales_Municipios (id_cp, id_municipio_direccion)
+    VALUES (var_id_cp, var_id_municipio);
+END IF;
+
     END IF;
 
     -- Estado y relaciÃ³n CP-Estado
@@ -2320,12 +2351,13 @@ BEGIN
     DECLARE total DECIMAL(10,2);
     DECLARE idFacturaNueva INT;
     DECLARE tienePagos INT;
+    DECLARE total_pagado DECIMAL(10,2) DEFAULT 0;
 
     -- Empresa fija
     SELECT id_empresa
     INTO id_empresaSP
     FROM Empresas
-    WHERE nombre_empresa = 'Auralisse JoyerÃ­a'
+    WHERE nombre_empresa = 'Auralisse Joyeri­a'
     LIMIT 1;
 
     -- Pedido existe
@@ -2338,20 +2370,7 @@ BEGIN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'El pedido no existe.';
     END IF;
-
-    -- No tenga factura previa
-    SELECT COUNT(*)
-    INTO existeFactura
-    FROM Facturas
-    WHERE id_pedido = id_pedidoSP;
-
-    IF existeFactura > 0 THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'El pedido ya tiene una factura registrada.';
-    END IF;
-
-    -- Total con descuento
-    SELECT SUM(
+ SELECT SUM(
         (pr.precio_unitario - (pr.precio_unitario * COALESCE(pr.descuento_producto, 0) / 100))
         * pd.cantidad_producto
     )
@@ -2370,19 +2389,31 @@ BEGIN
 
     SET idFacturaNueva = LAST_INSERT_ID();
 
-    -- Pagos asociados
+    -- Asociar pagos existentes del pedido (que tienen id_factura = NULL) a la factura nueva
+    UPDATE Pagos
+    SET id_factura = idFacturaNueva
+    WHERE id_pedido = id_pedidoSP
+    AND id_factura IS NULL;
+
+    -- Verificar pagos asociados a la factura
     SELECT COUNT(*)
     INTO tienePagos
     FROM Pagos
     WHERE id_factura = idFacturaNueva;
+    SELECT COALESCE(SUM(mp.monto_metodo_pago), 0)
+    INTO total_pagado
+    FROM Pagos p
+    JOIN Montos_Pagos mp ON p.id_pago = mp.id_pago
+    WHERE p.id_factura = idFacturaNueva;
 
-    -- Estado de factura
+    -- Estado de factura basado en el total pagado
     INSERT INTO Estados_Facturas (id_factura, estado_factura, fecha_estado_factura)
     VALUES (
         idFacturaNueva,
         CASE
-            WHEN tienePagos > 0 THEN 'Parcial'
-            ELSE 'Pagada'
+            WHEN total_pagado >= total THEN 'Pagada'
+            WHEN total_pagado > 0 THEN 'Parcial'
+            ELSE 'Pendiente'
         END,
         CURDATE()
     );
@@ -5294,4 +5325,425 @@ BEGIN
 END$$
 
 DELIMITER ;
+USE joyeria_db;
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS cliente_perfil_actualizar$$
+
+CREATE PROCEDURE cliente_perfil_actualizar(
+    IN var_id_usuario          INT,
+    IN var_nombre_usuario      VARCHAR(50),
+    IN var_nombre_primero      VARCHAR(50),
+    IN var_nombre_segundo      VARCHAR(50),
+    IN var_apellido_paterno    VARCHAR(50),
+    IN var_apellido_materno    VARCHAR(50),
+    IN var_rfc_usuario         VARCHAR(13),
+    IN var_telefono            VARCHAR(20),
+    IN var_correo              VARCHAR(150),
+    IN var_id_genero           INT,
+    IN var_codigo_postal       VARCHAR(10),
+    IN var_municipio           VARCHAR(100),     -- ignorado
+    IN var_id_estado_direccion INT,             -- ignorado
+    IN var_calle_direccion     VARCHAR(150),
+    IN var_numero_direccion    VARCHAR(20)
+)
+BEGIN
+    DECLARE var_id_cp        INT;
+    DECLARE var_id_direccion INT;
+
+    -- =======================================
+    -- Normalizar CP: quitar espacios y limitar a 5
+    -- =======================================
+    SET var_codigo_postal = TRIM(var_codigo_postal);
+    SET var_codigo_postal = LEFT(var_codigo_postal, 5);
+
+    -- =======================================
+    -- Evitar que numero_direccion sea NULL
+    -- =======================================
+    SET var_numero_direccion = TRIM(IFNULL(var_numero_direccion, ''));
+    IF var_numero_direccion = '' THEN
+        SET var_numero_direccion = 'S/N';
+    END IF;
+
+    -- =======================================
+    -- Actualizar datos del usuario
+    -- =======================================
+    UPDATE Usuarios
+    SET
+        nombre_usuario   = var_nombre_usuario,
+        nombre_primero   = var_nombre_primero,
+        nombre_segundo   = IFNULL(var_nombre_segundo, ''),
+        apellido_paterno = var_apellido_paterno,
+        apellido_materno = IFNULL(var_apellido_materno, ''),
+        rfc_usuario      = IFNULL(var_rfc_usuario, ''),
+        telefono         = IFNULL(var_telefono, ''),
+        correo           = IFNULL(var_correo, ''),
+        id_genero        = var_id_genero
+    WHERE id_usuario = var_id_usuario;
+
+    -- =======================================
+    -- Código postal (crear si no existe)
+    -- =======================================
+    SELECT id_cp INTO var_id_cp
+    FROM Codigos_Postales
+    WHERE codigo_postal = var_codigo_postal
+    LIMIT 1;
+
+    IF var_id_cp IS NULL THEN
+        INSERT INTO Codigos_Postales(codigo_postal)
+        VALUES (var_codigo_postal);
+        SET var_id_cp = LAST_INSERT_ID();
+    END IF;
+
+    -- =======================================
+    -- Dirección del usuario
+    -- =======================================
+    SELECT id_direccion INTO var_id_direccion
+    FROM Usuarios
+    WHERE id_usuario = var_id_usuario;
+
+    -- Si no tiene dirección → crear
+    IF var_id_direccion IS NULL THEN
+        INSERT INTO Direcciones(calle_direccion, numero_direccion, id_cp)
+        VALUES (var_calle_direccion, var_numero_direccion, var_id_cp);
+
+        SET var_id_direccion = LAST_INSERT_ID();
+
+        UPDATE Usuarios
+        SET id_direccion = var_id_direccion
+        WHERE id_usuario = var_id_usuario;
+
+    ELSE
+        -- Si ya tiene dirección → actualizarla
+        UPDATE Direcciones
+        SET
+            calle_direccion  = var_calle_direccion,
+            numero_direccion = var_numero_direccion,
+            id_cp            = var_id_cp
+        WHERE id_direccion = var_id_direccion;
+    END IF;
+
+    SELECT 'Perfil actualizado exitosamente' AS mensaje;
+END$$
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS sp_pedido_estado_obtener;
+DELIMITER $$
+CREATE PROCEDURE sp_pedido_estado_obtener(
+    IN p_id_pedido INT
+)
+BEGIN
+    SELECT ep.estado_pedido
+    FROM Pedidos p
+    JOIN Estados_Pedidos ep ON p.id_estado_pedido = ep.id_estado_pedido
+    WHERE p.id_pedido = p_id_pedido;
+END$$
+DELIMITER ;
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE sp_factura_verificar_existente(
+    IN p_id_pedido INT
+)
+BEGIN
+    SELECT id_factura 
+    FROM Facturas 
+    WHERE id_pedido = p_id_pedido;
+END$$
+
+CREATE OR REPLACE PROCEDURE sp_pedido_verificar_detalles(
+    IN p_id_pedido INT
+)
+BEGIN
+    SELECT COUNT(*) as total_detalles
+    FROM Pedidos_Detalles
+    WHERE id_pedido = p_id_pedido;
+END$$
+
+-- =========================================
+-- sp_empresa_obtener_por_nombre
+-- Obtiene una empresa por su nombre
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_empresa_obtener_por_nombre(
+    IN p_nombre_empresa VARCHAR(255)
+)
+BEGIN
+    SELECT id_empresa
+    FROM Empresas
+    WHERE nombre_empresa = p_nombre_empresa
+    LIMIT 1;
+END$$
+
+-- =========================================
+-- sp_pedido_subtotal_calcular
+-- Calcula el subtotal de un pedido
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_pedido_subtotal_calcular(
+    IN p_id_pedido INT
+)
+BEGIN
+    SELECT COALESCE(SUM(pr.precio_unitario * pd.cantidad_producto), 0) as subtotal
+    FROM Pedidos_Detalles pd
+    JOIN Productos pr ON pr.id_producto = pd.id_producto
+    WHERE pd.id_pedido = p_id_pedido;
+END$$
+
+-- =========================================
+-- sp_factura_obtener_por_pedido
+-- Obtiene la factura de un pedido
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_factura_obtener_por_pedido(
+    IN p_id_pedido INT
+)
+BEGIN
+    SELECT id_factura, folio, total
+    FROM Facturas
+    WHERE id_pedido = p_id_pedido
+    ORDER BY id_factura DESC
+    LIMIT 1;
+END$$
+
+-- =========================================
+-- sp_pedido_verificar_cliente
+-- Verifica que un pedido pertenezca a un cliente
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_pedido_verificar_cliente(
+    IN p_id_pedido INT,
+    IN p_id_usuario INT
+)
+BEGIN
+    SELECT 1
+    FROM Pedidos p
+    JOIN Pedidos_Clientes pc ON p.id_pedido = pc.id_pedido
+    JOIN Clientes c ON pc.id_cliente = c.id_cliente
+    WHERE p.id_pedido = p_id_pedido AND c.id_usuario = p_id_usuario;
+END$$
+
+-- =========================================
+-- sp_factura_verificar_cliente
+-- Verifica que una factura pertenezca a un cliente
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_factura_verificar_cliente(
+    IN p_id_factura INT,
+    IN p_id_usuario INT
+)
+BEGIN
+    SELECT p.id_pedido, ep.estado_pedido
+    FROM Pedidos p
+    LEFT JOIN Estados_Pedidos ep ON p.id_estado_pedido = ep.id_estado_pedido
+    LEFT JOIN Pedidos_Clientes pc ON p.id_pedido = pc.id_pedido
+    LEFT JOIN Clientes c ON pc.id_cliente = c.id_cliente
+    JOIN Facturas f ON p.id_pedido = f.id_pedido
+    WHERE f.id_factura = p_id_factura AND c.id_usuario = p_id_usuario;
+END$$
+
+-- =========================================
+-- sp_factura_info_cliente
+-- Obtiene información de factura con verificación de cliente
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_factura_info_cliente(
+    IN p_id_factura INT,
+    IN p_id_usuario INT
+)
+BEGIN
+    SELECT f.id_factura, f.total, COALESCE(SUM(mp.monto_metodo_pago), 0) as total_pagado
+    FROM Facturas f
+    JOIN Pedidos p ON f.id_pedido = p.id_pedido
+    JOIN Pedidos_Clientes pc ON p.id_pedido = pc.id_pedido
+    JOIN Clientes c ON pc.id_cliente = c.id_cliente
+    LEFT JOIN Pagos pa ON f.id_factura = pa.id_factura
+    LEFT JOIN Montos_Pagos mp ON pa.id_pago = mp.id_pago
+    WHERE f.id_factura = p_id_factura AND c.id_usuario = p_id_usuario
+    GROUP BY f.id_factura, f.total;
+END$$
+
+-- =========================================
+-- sp_factura_info_pagos
+-- Obtiene información de factura con pagos
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_factura_info_pagos(
+    IN p_id_factura INT
+)
+BEGIN
+    SELECT
+        f.id_factura,
+        f.folio,
+        f.total AS total_factura,
+        COALESCE(SUM(mp.monto_metodo_pago), 0) AS total_pagado,
+        (f.total - COALESCE(SUM(mp.monto_metodo_pago), 0)) AS pendiente,
+        CASE
+            WHEN COALESCE(SUM(mp.monto_metodo_pago), 0) >= f.total THEN 'Pagada'
+            WHEN COALESCE(SUM(mp.monto_metodo_pago), 0) > 0 THEN 'Parcial'
+            ELSE 'Pendiente'
+        END AS estado_pago
+    FROM Facturas f
+    LEFT JOIN Pagos p ON f.id_factura = p.id_factura
+    LEFT JOIN Montos_Pagos mp ON p.id_pago = mp.id_pago
+    WHERE f.id_factura = p_id_factura
+    GROUP BY f.id_factura, f.folio, f.total;
+END$$
+
+-- =========================================
+-- sp_factura_pagos_lista
+-- Obtiene lista de pagos de una factura
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_factura_pagos_lista(
+    IN p_id_factura INT
+)
+BEGIN
+    SELECT
+        p.id_pago,
+        p.fecha_pago,
+        mp.monto_metodo_pago,
+        m.nombre_metodo_pago
+    FROM Pagos p
+    JOIN Montos_Pagos mp ON p.id_pago = mp.id_pago
+    JOIN Metodos_Pagos m ON mp.id_metodo_pago = m.id_metodo_pago
+    WHERE p.id_factura = p_id_factura
+    ORDER BY p.fecha_pago DESC;
+END$$
+
+-- =========================================
+-- sp_usuario_datos_completos
+-- Obtiene datos completos de un usuario
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_usuario_datos_completos(
+    IN p_id_usuario INT
+)
+BEGIN
+    SELECT
+        u.nombre_usuario,
+        u.nombre_primero,
+        u.nombre_segundo,
+        u.apellido_paterno,
+        u.apellido_materno,
+        u.correo,
+        u.id_genero,
+        u.rfc_usuario,
+        u.telefono,
+        u.id_direccion,
+        d.calle_direccion,
+        d.numero_direccion,
+        cp.codigo_postal
+    FROM Usuarios u
+    LEFT JOIN Direcciones d ON u.id_direccion = d.id_direccion
+    LEFT JOIN Codigos_Postales cp ON d.id_cp = cp.id_cp
+    WHERE u.id_usuario = p_id_usuario;
+END$$
+
+-- =========================================
+-- sp_usuario_rol_activo_obtener
+-- Obtiene el primer rol activo de un usuario
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_usuario_rol_activo_obtener(
+    IN p_id_usuario INT
+)
+BEGIN
+    SELECT id_usuario_rol
+    FROM Usuarios_Roles
+    WHERE id_usuario = p_id_usuario
+    AND activo_usuario_rol = 1
+    LIMIT 1;
+END$$
+
+-- =========================================
+-- sp_pedido_detalles_obtener
+-- Obtiene los detalles de un pedido
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_pedido_detalles_obtener(
+    IN p_id_pedido INT
+)
+BEGIN
+    SELECT
+        pd.id_pedido_detalle,
+        pd.id_producto,
+        pd.cantidad_producto,
+        m.nombre_producto,
+        p.precio_unitario,
+        s.sku
+    FROM Pedidos_Detalles pd
+    JOIN Productos p ON pd.id_producto = p.id_producto
+    JOIN Modelos m ON p.id_modelo = m.id_modelo
+    JOIN Sku s ON p.id_sku = s.id_sku
+    WHERE pd.id_pedido = p_id_pedido;
+END$$
+
+-- =========================================
+-- sp_producto_por_sku
+-- Obtiene un producto por su SKU
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_producto_por_sku(
+    IN p_sku VARCHAR(50)
+)
+BEGIN
+    SELECT p.id_producto
+    FROM Productos p
+    JOIN Sku s ON p.id_sku = s.id_sku
+    WHERE s.sku = p_sku
+    LIMIT 1;
+END$$
+
+-- =========================================
+-- sp_producto_sucursal_obtener
+-- Obtiene la sucursal de un producto
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_producto_sucursal_obtener(
+    IN p_id_producto INT
+)
+BEGIN
+    SELECT s.nombre_sucursal, s.id_sucursal
+    FROM Sucursales_Productos sp
+    JOIN Sucursales s ON sp.id_sucursal = s.id_sucursal
+    WHERE sp.id_producto = p_id_producto
+    AND s.activo_sucursal = 1
+    LIMIT 1;
+END$$
+
+-- =========================================
+-- sp_sucursal_gestor_obtener
+-- Obtiene la sucursal de un gestor de sucursal
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_sucursal_gestor_obtener(
+    IN p_id_usuario INT
+)
+BEGIN
+    SELECT s.id_sucursal, s.nombre_sucursal
+    FROM Usuarios_Roles ur
+    JOIN Roles r ON ur.id_roles = r.id_roles
+    JOIN Usuarios_Roles_Sucursales urs ON ur.id_usuario_rol_sucursal = urs.id_usuario_rol_sucursal
+    JOIN Roles_Sucursales rs ON urs.id_roles_sucursal = rs.id_roles_sucursal
+    JOIN Sucursales s ON rs.id_sucursal = s.id_sucursal
+    WHERE ur.id_usuario = p_id_usuario
+    AND ur.activo_usuario_rol = 1
+    AND urs.activo_usuario_rol_sucursal = 1
+    AND s.activo_sucursal = 1
+    AND r.nombre_rol = 'Gestor de Sucursal'
+    LIMIT 1;
+END$$
+
+-- =========================================
+-- sp_auditor_kpis_basicos
+-- Obtiene KPIs básicos para auditoría
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_auditor_kpis_basicos()
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM Pedidos) as total_pedidos,
+        (SELECT COUNT(*) FROM Facturas) as total_facturas,
+        (SELECT COUNT(*) FROM Devoluciones) as total_devoluciones;
+END$$
+
+-- =========================================
+-- sp_auditor_discrepancias
+-- Obtiene discrepancias para auditoría
+-- =========================================
+CREATE OR REPLACE PROCEDURE sp_auditor_discrepancias()
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM Pedidos WHERE estado_pedido = 'Cancelado') as pedidos_cancelados,
+        (SELECT COUNT(*) FROM Devoluciones_Detalles dd
+         JOIN Estados_Devoluciones ed ON dd.id_estado_devolucion = ed.id_estado_devolucion
+         WHERE ed.estado_devolucion = 'Rechazado') as devoluciones_rechazadas;
+END$$
+
+DELIMITER ;
+
 

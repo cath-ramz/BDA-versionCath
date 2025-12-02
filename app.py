@@ -5255,31 +5255,40 @@ def api_ventas_por_categoria():
         print(f"Error en api_ventas_por_categoria: {str(e)}\n{traceback.format_exc()}")
         return jsonify([]), 500
 
+
+
+
+
+
+        
 @app.route('/api/ventas/pedidos/<int:id_pedido>/estados-disponibles', methods=['GET'])
 def api_estados_disponibles_pedido(id_pedido):
     """Endpoint para obtener los estados disponibles según el estado actual del pedido"""
     try:
         cursor = mysql.connection.cursor()
-        
+
         # Obtener el estado actual del pedido
         cursor.callproc('sp_pedido_estado_obtener', [id_pedido])
-        pedido = cursor.fetchone()
-        while cursor.nextset():
-            pass
-        
+
+        # Leer resultado del SELECT
+        pedido = None
+        for result in cursor.stored_results():
+            pedido = result.fetchone()
+            break  # Solo necesitamos la primera fila
+
         if not pedido:
             cursor.close()
             return jsonify({'error': 'Pedido no encontrado'}), 404
-        
+
         estado_actual = pedido.get('estado_pedido') if hasattr(pedido, 'get') else pedido[0]
-        
+
         # Determinar estados disponibles según el flujo válido del trigger
         # Flujo permitido:
         # - Confirmado → Procesado
         # - Procesado → Completado
         # - Procesado → Cancelado
         estados_disponibles = []
-        
+
         if estado_actual == 'Confirmado':
             estados_disponibles = [{'estado_pedido': 'Procesado'}]
         elif estado_actual == 'Procesado':
@@ -5290,13 +5299,14 @@ def api_estados_disponibles_pedido(id_pedido):
         elif estado_actual in ['Completado', 'Cancelado']:
             # Estados finales, no se pueden cambiar
             estados_disponibles = []
-        
+
         cursor.close()
-        
+
         return jsonify({
             'estado_actual': estado_actual,
             'estados_disponibles': estados_disponibles
         })
+
     except Exception as e:
         import traceback
         print(f"Error obteniendo estados disponibles: {str(e)}\n{traceback.format_exc()}")
@@ -7892,82 +7902,113 @@ def api_cliente_crear_factura():
         
         if not id_pedido:
             return jsonify({'success': False, 'error': 'ID de pedido requerido'}), 400
-        
-        # Verificar que el pedido pertenece al cliente autenticado
-        cursor = mysql.connection.cursor()
-        cursor.callproc('sp_pedido_estado_obtener', [id_pedido, session.get('user_id')])
+
+        # ===============================
+        # 1. Verificar que el pedido exista (y obtener su estado)
+        # ===============================
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.callproc('sp_pedido_estado_obtener', (id_pedido,))
         pedido = cursor.fetchone()
         while cursor.nextset():
             pass
-        
+        cursor.close()
+
         if not pedido:
-            cursor.close()
-            return jsonify({'success': False, 'error': 'Pedido no encontrado o no pertenece al cliente'}), 404
-        
-        # Verificar si ya tiene factura
-        cursor.callproc('sp_factura_verificar_existente', [id_pedido])
+            return jsonify({
+                'success': False,
+                'error': 'Pedido no encontrado'
+            }), 404
+
+        # ===============================
+        # 2. Verificar si ya tiene factura
+        # ===============================
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.callproc('sp_factura_verificar_existente', (id_pedido,))
         factura_existente = cursor.fetchone()
         while cursor.nextset():
             pass
-        
+        cursor.close()
+
         if factura_existente:
-            cursor.close()
             return jsonify({'success': False, 'error': 'El pedido ya tiene una factura registrada'}), 400
-        
-        # Verificar que el pedido tenga detalles
-        cursor.callproc('sp_pedido_verificar_detalles', [id_pedido])
+
+        # ===============================
+        # 3. Verificar que el pedido tenga detalles
+        # ===============================
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.callproc('sp_pedido_verificar_detalles', (id_pedido,))
         detalles = cursor.fetchone()
         while cursor.nextset():
             pass
-        
+        cursor.close()
+
         if not detalles or detalles.get('total_detalles', 0) == 0:
-            cursor.close()
             return jsonify({'success': False, 'error': 'El pedido no tiene productos asociados'}), 400
-        
-        # Verificar que existe la empresa
-        cursor.callproc('sp_empresa_obtener_por_nombre', ['Auralisse Joyería'])
+
+        # ===============================
+        # 4. Verificar que existe la empresa
+        # ===============================
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.callproc('sp_empresa_obtener_por_nombre', ('Auralisse Joyeria',))
         empresa = cursor.fetchone()
         while cursor.nextset():
             pass
-        
+        cursor.close()
+
         if not empresa or not empresa.get('id_empresa'):
-            cursor.close()
-            return jsonify({'success': False, 'error': 'No se encontró la empresa "Auralisse Joyería" en el sistema. Contacte al administrador.'}), 500
-        
-        # Verificar que el pedido tenga un subtotal válido
-        cursor.callproc('sp_pedido_subtotal_calcular', [id_pedido])
+            return jsonify({
+                'success': False,
+                'error': 'No se encontró la empresa "Auralisse Joyeria" en el sistema. Contacte al administrador.'
+            }), 500
+
+        # ===============================
+        # 5. Verificar subtotal válido
+        # ===============================
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.callproc('sp_pedido_subtotal_calcular', (id_pedido,))
         subtotal_check = cursor.fetchone()
         while cursor.nextset():
             pass
-        
+        cursor.close()
+
         if not subtotal_check or subtotal_check.get('subtotal', 0) <= 0:
-            cursor.close()
             return jsonify({'success': False, 'error': 'El pedido no tiene productos válidos o el total es cero'}), 400
-        
-        # Crear la factura usando el stored procedure
+
+        # ===============================
+        # 6. Crear la factura (pedidoFacturar)
+        # ===============================
         try:
-            cursor.callproc('pedidoFacturar', [id_pedido])
-            # Consumir todos los resultados del SP
+            cursor = mysql.connection.cursor()
+            cursor.callproc('pedidoFacturar', (id_pedido,))
             while cursor.nextset():
                 pass
-        except Exception as sp_error:
             cursor.close()
+        except Exception as sp_error:
+            # Si el SP truena, revertimos
             mysql.connection.rollback()
-            error_msg = str(sp_error)            # Si el error es del stored procedure, extraer el mensaje
+            error_msg = str(sp_error)
             if 'El pedido ya tiene una factura registrada' in error_msg:
                 return jsonify({'success': False, 'error': 'El pedido ya tiene una factura registrada'}), 400
             elif 'El pedido no existe' in error_msg:
                 return jsonify({'success': False, 'error': 'El pedido no existe'}), 404
+            elif 'No se encontró la empresa Auralisse Joyeria' in error_msg:
+                return jsonify({'success': False, 'error': 'No se encontró la empresa "Auralisse Joyeria" en el sistema. Contacte al administrador.'}), 500
             else:
                 return jsonify({'success': False, 'error': f'Error en el stored procedure: {error_msg}'}), 500
-        
-        # Obtener la factura creada
-        cursor.callproc('sp_factura_obtener_por_pedido', [id_pedido])
+
+        # ===============================
+        # 7. Obtener la factura creada
+        # ===============================
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.callproc('sp_factura_obtener_por_pedido', (id_pedido,))
         factura = cursor.fetchone()
-        
-        mysql.connection.commit()
+        while cursor.nextset():
+            pass
         cursor.close()
-        
+
+        # Commit final
+        mysql.connection.commit()
+
         if factura:
             return jsonify({
                 'success': True,
@@ -7976,13 +8017,19 @@ def api_cliente_crear_factura():
                 'folio': factura['folio']
             })
         else:
-            return jsonify({'success': False, 'error': 'No se pudo crear la factura. El stored procedure no generó la factura.'}), 500
-            
+            return jsonify({
+                'success': False,
+                'error': 'No se pudo crear la factura. El stored procedure no generó la factura.'
+            }), 500
+
     except Exception as e:
         import traceback
-        error_msg = f"Error creando factura: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg, flush=True)
-        mysql.connection.rollback()
+        print(f"Error creando factura: {str(e)}\n{traceback.format_exc()}", flush=True)
+        try:
+            mysql.connection.rollback()
+        except Exception:
+            # si ya estaba desincronizada la conexión, evitamos que truene aquí otra vez
+            pass
         return jsonify({
             'success': False,
             'error': str(e)
@@ -8805,10 +8852,10 @@ def api_cliente_completar_datos():
         import MySQLdb.cursors
         data = request.get_json()
         id_usuario = session.get('user_id')
-        
+
         if not id_usuario:
             return jsonify({'success': False, 'error': 'Debe iniciar sesión'}), 401
-        
+
         # Obtener datos actuales del usuario
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
@@ -8825,7 +8872,8 @@ def api_cliente_completar_datos():
                 u.id_direccion,
                 d.calle_direccion,
                 d.numero_direccion,
-                cp.codigo_postal
+                cp.codigo_postal,
+                d.id_estado_direccion
             FROM Usuarios u
             LEFT JOIN Direcciones d ON u.id_direccion = d.id_direccion
             LEFT JOIN Codigos_Postales cp ON d.id_cp = cp.id_cp
@@ -8833,10 +8881,10 @@ def api_cliente_completar_datos():
         """, (id_usuario,))
         usuario_data = cursor.fetchone()
         cursor.close()
-        
+
         if not usuario_data:
             return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
-        
+
         # Usar datos proporcionados o mantener los existentes
         rfc_usuario = data.get('rfc_usuario', '').strip() or usuario_data.get('rfc_usuario') or ''
         telefono = data.get('telefono', '').strip() or usuario_data.get('telefono') or ''
@@ -8845,6 +8893,7 @@ def api_cliente_completar_datos():
         codigo_postal = data.get('codigo_postal', '').strip() or usuario_data.get('codigo_postal') or ''
         municipio = data.get('municipio', '').strip() or ''
         id_estado = data.get('id_estado')
+
         if id_estado:
             try:
                 id_estado = int(id_estado)
@@ -8852,7 +8901,7 @@ def api_cliente_completar_datos():
                 id_estado = None
         else:
             id_estado = usuario_data.get('id_estado_direccion')
-        
+
         # Validaciones
         if not rfc_usuario:
             return jsonify({'success': False, 'error': 'El RFC es requerido'}), 400
@@ -8868,11 +8917,10 @@ def api_cliente_completar_datos():
             return jsonify({'success': False, 'error': 'El municipio es requerido'}), 400
         if not id_estado:
             return jsonify({'success': False, 'error': 'El estado es requerido'}), 400
-        
+
         # Llamar al stored procedure para actualizar
         cursor2 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         try:
-            # Preparar parámetros para el stored procedure
             params = [
                 id_usuario,
                 usuario_data.get('nombre_usuario'),
@@ -8890,31 +8938,31 @@ def api_cliente_completar_datos():
                 municipio,
                 id_estado
             ]
-            
+
             print(f"[DEBUG] Llamando cliente_perfil_actualizar con {len(params)} parámetros")
             print(f"[DEBUG] Parámetros: id_usuario={id_usuario}, municipio={municipio}, id_estado={id_estado}")
-            
+
             cursor2.callproc('cliente_perfil_actualizar', params)
             resultado = cursor2.fetchone()
             while cursor2.nextset():
                 pass
             mysql.connection.commit()
             cursor2.close()
-            
+
             print(f"[DEBUG] Stored procedure ejecutado exitosamente")
-            
+
             return jsonify({
                 'success': True,
                 'mensaje': 'Datos completados exitosamente'
             })
         except Exception as sp_error:
-            import traceback
+            import traceback as tb
             error_str = str(sp_error)
-            error_trace = traceback.format_exc()
+            error_trace = tb.format_exc()
             print(f"[ERROR] Error en stored procedure cliente_perfil_actualizar:")
             print(f"[ERROR] Mensaje: {error_str}")
             print(f"[ERROR] Traceback:\n{error_trace}")
-            
+
             try:
                 cursor2.close()
             except:
@@ -8923,33 +8971,24 @@ def api_cliente_completar_datos():
                 mysql.connection.rollback()
             except:
                 pass
-            
-            # Extraer mensaje específico del error
+
             mensaje_error = 'Error al guardar los datos'
             if 'Error:' in error_str:
                 mensaje_error = error_str.split('Error:')[-1].strip()
-            elif 'SET MESSAGE_TEXT' in error_str:
-                import re
-                match = re.search(r"SET MESSAGE_TEXT = '([^']+)'", error_str)
-                if match:
-                    mensaje_error = match.group(1)
-            elif 'does not exist' in error_str or 'not found' in error_str.lower():
-                mensaje_error = 'El stored procedure no está actualizado. Por favor, ejecute el script SQL para actualizar la base de datos.'
-            elif 'wrong number of arguments' in error_str.lower() or 'parameter' in error_str.lower():
-                mensaje_error = 'Error: El stored procedure no tiene los parámetros correctos. Por favor, ejecute el script SQL para actualizar la base de datos.'
-            
+
             return jsonify({
                 'success': False,
                 'error': mensaje_error
             }), 500
-        
+
     except Exception as e:
-        import traceback
+        import traceback as tb
         error_str = str(e)
-        error_trace = traceback.format_exc()
+        error_trace = tb.format_exc()
         print(f"[ERROR] Error general en api_cliente_completar_datos:")
         print(f"[ERROR] Mensaje: {error_str}")
         print(f"[ERROR] Traceback:\n{error_trace}")
+
         return jsonify({
             'success': False,
             'error': f'Error al completar datos: {error_str}'
@@ -8965,6 +9004,7 @@ def api_cliente_actualizar_contrasena():
         contrasena_nueva = data.get('contrasena_nueva', '').strip()
         contrasena_nueva_confirmar = data.get('contrasena_nueva_confirmar', '').strip()
         
+        # Validaciones básicas
         if not contrasena_actual or not contrasena_nueva:
             return jsonify({'success': False, 'error': 'Contraseña actual y nueva son requeridas'}), 400
         
@@ -8974,9 +9014,11 @@ def api_cliente_actualizar_contrasena():
         if len(contrasena_nueva) < 6:
             return jsonify({'success': False, 'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
         
-        # Verificar contraseña actual usando SP
+        user_id = session.get('user_id')
+        
+        # 1. Obtener contraseña actual desde la BD usando SP
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.callproc('sp_usuario_obtener_contrasena', [session.get('user_id')])
+        cursor.callproc('sp_usuario_obtener_contrasena', [user_id])
         usuario = cursor.fetchone()
         while cursor.nextset():
             pass
@@ -8985,25 +9027,25 @@ def api_cliente_actualizar_contrasena():
         if not usuario:
             return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
         
+        # 2. Verificar contraseña actual con Argon2
         try:
             ph.verify(usuario['contrasena'], contrasena_actual)
         except VerifyMismatchError:
             return jsonify({'success': False, 'error': 'Contraseña actual incorrecta'}), 400
         
-        # Hashear nueva contraseña
+        # 3. Hashear nueva contraseña
         hash_nueva = ph.hash(contrasena_nueva)
         
-        # Actualizar contraseña
+        # 4. Actualizar contraseña con el SP (SOLO 2 PARÁMETROS)
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         
         try:
             cursor.callproc('cliente_contrasena_actualizar', [
-                session.get('user_id'),
-                contrasena_actual,  # Contraseña actual en texto plano (el SP no la usa, pero la recibe)
-                hash_nueva  # Nueva contraseña hasheada
+                user_id,      # p_id_usuario
+                hash_nueva    # p_contrasena_nueva (ya hasheada)
             ])
             
-            # Obtener resultado del SP
+            # Obtener resultado del SP (el SELECT 'Contraseña actualizada exitosamente')
             resultado = cursor.fetchone()
             while cursor.nextset():
                 pass
@@ -9017,17 +9059,18 @@ def api_cliente_actualizar_contrasena():
                 'success': True,
                 'mensaje': mensaje
             })
+        
         except Exception as sp_error:
+            import traceback as tb
             cursor.close()
             mysql.connection.rollback()
-            error_msg = str(sp_error)            
-            print(f"[TRACEBACK] {traceback.format_exc()}", flush=True)
             
-            # Extraer mensaje del error del SP
+            error_msg = str(sp_error)
+            print(f"[TRACEBACK] {tb.format_exc()}", flush=True)
+            
+            # Si algún día tu SP lanza SIGNAL con mensajes específicos, los puedes mapear aquí:
             if 'Usuario no encontrado' in error_msg:
                 return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
-            elif 'debe tener al menos 6 caracteres' in error_msg:
-                return jsonify({'success': False, 'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
             else:
                 return jsonify({
                     'success': False,
@@ -9035,9 +9078,9 @@ def api_cliente_actualizar_contrasena():
                 }), 500
         
     except Exception as e:
-        import traceback
+        import traceback as tb
         error_str = str(e)
-        print(f"Error actualizando contraseña: {error_str}\n{traceback.format_exc()}")
+        print(f"Error actualizando contraseña: {error_str}\n{tb.format_exc()}")
         
         try:
             mysql.connection.rollback()
@@ -9046,6 +9089,7 @@ def api_cliente_actualizar_contrasena():
         
         mensaje_usuario = 'Error al actualizar la contraseña'
         
+        # Si el error trae mensaje entre comillas, lo extraemos
         if 'ERROR' in error_str or 'Error' in error_str:
             import re
             match = re.search(r'["\']([^"\']+)["\']', error_str)
