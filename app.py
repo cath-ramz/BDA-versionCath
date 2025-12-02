@@ -7261,141 +7261,85 @@ def api_crear_producto():
             'success': False
         }), 500
 @app.route('/api/productos/actualizar', methods=['POST'])
+@login_requerido
 def api_actualizar_producto():
-    """Endpoint para actualizar producto usando SP productoActualizar - SOLO SP, NO SQL EMBEBIDO"""
     try:
         data = request.get_json()
-        
-        # Obtener parámetros del SP - SKU es requerido para identificar el producto
-        sku = data.get('sku', '').strip()
-        if not sku:
-            return jsonify({'error': 'SKU es requerido para actualizar el producto'}), 400
-        
-        # ============================================================
-        # PROCESAMIENTO DEL SKU PARA EL STORED PROCEDURE productoActualizar
-        # ============================================================
-        # IMPORTANTE: A diferencia de productoAlta, el SP productoActualizar
-        # NO procesa el SKU para agregar el prefijo "AUR-" automáticamente.
-        # Solo busca el SKU tal cual se envía con UPPER(TRIM(skuSP)).
-        # 
-        # Por lo tanto, el SKU debe enviarse COMPLETO tal como está en la BD:
-        # "AUR-005A" (NO "005A")
-        # ============================================================
-        sku = sku.upper().strip()  # Normalizar: mayúsculas y sin espacios
-        
-        # Validar que el SKU tenga el formato correcto
-        if not sku.startswith('AUR-'):
-            return jsonify({
-                'error': 'SKU inválido',
-                'mensaje': 'El SKU debe tener el formato AUR-999X (ejemplo: AUR-005A)'
-            }), 400
-        
-        if not sku or len(sku.strip()) == 0:
-            return jsonify({
-                'error': 'SKU inválido',
-                'mensaje': 'El SKU es requerido'
-            }), 400
-        
-        # Todos los demás campos son opcionales (pueden ser NULL)
-        nombre_producto = data.get('nombre_producto', '').strip() or None
-        nombre_categoria = data.get('nombre_categoria', '').strip() or None
-        material = data.get('material', '').strip() or None
-        genero_producto = data.get('genero_producto', '').strip() or None
-        precio_unitario = data.get('precio_unitario')
-        descuento_producto = data.get('descuento_producto')
-        costo_unitario = data.get('costo_unitario')
-        talla_raw = data.get('talla')  # Guardar talla original
-        kilataje = data.get('kilataje')
-        ley = data.get('ley')
-        activo_producto = data.get('activo_producto')
-        
-        # Convertir valores numéricos
-        if precio_unitario is not None:
-            precio_unitario = float(precio_unitario)
-        if descuento_producto is not None:
-            descuento_producto = int(descuento_producto)
-        if costo_unitario is not None:
-            costo_unitario = float(costo_unitario)
-        
-        # La talla es un string (ej: "4", "4,5") que coincide con el ENUM de la tabla
-        # El SP ahora acepta VARCHAR, así que enviamos el string directamente
-        talla = None
-        if talla_raw is not None and talla_raw != '':
-            talla = str(talla_raw).strip()  # Convertir a string y limpiar espacios
-        
-        # Convertir activo_producto a TINYINT (0 o 1) para MySQL
-        if activo_producto is not None:
-            # Aceptar boolean, string "true"/"false", o 0/1
-            if isinstance(activo_producto, bool):
-                activo_producto = 1 if activo_producto else 0
-            elif isinstance(activo_producto, str):
-                activo_producto = 1 if activo_producto.lower() in ('true', '1', 'yes', 'on') else 0
-            else:
-                activo_producto = 1 if activo_producto else 0
-        
-        cursor = mysql.connection.cursor()
-        
-        try:
-            # Llamar al SP productoActualizar - SOLO SP, NO SQL EMBEBIDO
-            # El SP maneja todas las validaciones y actualizaciones
-            cursor.callproc('productoActualizar', [
-                sku,                    # skuSP - REQUERIDO
-                nombre_categoria,       # nombre_categoriaSP - puede ser NULL
-                material,               # materialSP - puede ser NULL
-                genero_producto,        # genero_productoSP - puede ser NULL
-                nombre_producto,        # nombre_productoSP - puede ser NULL
-                precio_unitario,        # precio_unitarioSP - puede ser NULL
-                descuento_producto,     # descuento_productoSP - puede ser NULL
-                costo_unitario,         # costo_unitarioSP - puede ser NULL
-                activo_producto,        # activo_productoSP - TINYINT (0 o 1)
-                talla,                  # tallaSP - puede ser NULL (VARCHAR)
-                kilataje,               # kilatajeSP - puede ser NULL
-                ley                     # leySP - puede ser NULL
-            ])
-            
-            # Limpiar resultados adicionales del SP
-            while cursor.nextset():
-                pass
-            
-            mysql.connection.commit()
-            cursor.close()
-            
-            return jsonify({
-                'success': True,
-                'mensaje': 'Producto actualizado exitosamente'
-            })
-        except Exception as sp_error:
-            cursor.close()
-            raise sp_error
-    except Exception as e:
-        mysql.connection.rollback()
-        import traceback
-        error_msg = f"Error actualizando producto: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
-        
-        # Extraer mensaje de error del SP si es posible
-        error_str = str(e)
-        mensaje_usuario = f'Error al actualizar el producto: {error_str}'
-        
-        # Si el error contiene un mensaje del SP (error 1644 es SIGNAL de MySQL)
-        if '1644' in error_str or 'SIGNAL' in error_str or 'OperationalError' in error_str:
-            import re
-            match = re.search(r'["\']([^"\']+)["\']', error_str)
-            if match:
-                mensaje_usuario = match.group(1)
-            elif 'El SKU no existe' in error_str:
-                mensaje_usuario = 'El SKU no existe, no se puede actualizar'
-            elif 'No se puede asignar kilataje' in error_str:
-                mensaje_usuario = 'No se puede asignar kilataje a un producto que no es Oro'
-            elif 'No se puede asignar ley' in error_str:
-                mensaje_usuario = 'No se puede asignar ley a un producto que no es Plata'
-        
-        return jsonify({
-            'error': error_str,
-            'mensaje': mensaje_usuario,
-            'success': False
-        }), 500
 
+        sku = data.get('sku', '').strip()
+        nombre_categoria = data.get('categoria', '').strip()
+        material = data.get('material', '').strip()
+        genero_producto = data.get('genero_producto', '').strip()
+        nombre_producto = data.get('nombre_producto', '').strip()
+
+        precio_unitario_raw = data.get('precio_unitario')
+        descuento_raw = data.get('descuento_producto')
+        costo_unitario_raw = data.get('costo_unitario')
+        talla = (data.get('talla') or '').strip()
+        kilataje_raw = data.get('kilataje')
+        ley_raw = data.get('ley')
+        activo_producto = 1 if data.get('activo_producto', True) else 0
+
+        # ===== Normalizar números =====
+        precio_unitario = float(precio_unitario_raw) if precio_unitario_raw not in (None, '',) else None
+        descuento = float(descuento_raw) if descuento_raw not in (None, '',) else None
+        costo_unitario = float(costo_unitario_raw) if costo_unitario_raw not in (None, '',) else None
+
+        # kilataje: solo número o NULL
+        if kilataje_raw in (None, ''):
+            kilataje = None
+        else:
+            kilataje = int(kilataje_raw)
+
+        # ley: solo número o NULL
+        if ley_raw in (None, ''):
+            ley = None
+        else:
+            # ojo con comas decimales en el front
+            ley = float(str(ley_raw).replace(',', '.'))
+
+        # Reglas por material
+        mat_lower = material.lower()
+        if mat_lower != 'oro':
+            kilataje = None
+        if mat_lower != 'plata':
+            ley = None
+
+        cursor = mysql.connection.cursor()
+
+        cursor.callproc('productoActualizar', [
+            sku,
+            nombre_categoria if nombre_categoria != '' else None,
+            material if material != '' else None,
+            genero_producto if genero_producto != '' else None,
+            nombre_producto if nombre_producto != '' else None,
+            precio_unitario,
+            descuento,
+            costo_unitario,
+            activo_producto,
+            talla if talla != '' else None,
+            kilataje,
+            ley
+        ])
+
+        # consumir resultados / commit
+        _ = cursor.fetchall()
+        while cursor.nextset():
+            pass
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({'success': True, 'mensaje': 'Producto actualizado correctamente'})
+
+    except Exception as e:
+        import traceback
+        print(f"Error actualizando producto: {e}\n{traceback.format_exc()}")
+        try:
+            mysql.connection.rollback()
+        except:
+            pass
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/productos/ver/<int:id_producto>')
 def api_ver_producto(id_producto):
