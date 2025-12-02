@@ -2513,6 +2513,8 @@ BEGIN
 END$$
 
 -- =========================================
+
+-- =========================================
 -- productoActualizar
 -- =========================================
 CREATE OR REPLACE PROCEDURE productoActualizar(
@@ -2526,7 +2528,7 @@ CREATE OR REPLACE PROCEDURE productoActualizar(
     IN costo_unitarioSP     DECIMAL(10,2),
     IN activo_productoSP    TINYINT,
     IN tallaSP              VARCHAR(20),
-    IN kilatajeSP           INT,
+    IN kilatajeSP           VARCHAR(10),
     IN leySP                DECIMAL(10,2)
 )
 BEGIN
@@ -2538,6 +2540,7 @@ BEGIN
     DECLARE IDgenero INT;
     DECLARE filaOro INT;
     DECLARE filaPlata INT;
+    DECLARE v_mensaje_error VARCHAR(500);
 
     -- Buscar SKU
     SELECT id_sku
@@ -2569,8 +2572,8 @@ BEGIN
         WHERE nombre_categoria = nombre_categoriaSP;
 
         IF IDcategoria IS NULL THEN
-            INSERT INTO Categorias(nombre_categoria)
-            VALUES (nombre_categoriaSP);
+            INSERT INTO Categorias(nombre_categoria, activo_categoria)
+            VALUES (nombre_categoriaSP, TRUE);
 
             SELECT id_categoria
             INTO IDcategoria
@@ -6021,8 +6024,9 @@ END$$
 
 DELIMITER ;
 
-DELIMITER $$
-
+-- =========================================
+-- productoAlta
+-- =========================================
 CREATE OR REPLACE PROCEDURE productoAlta(
     IN nombre_categoriaSP   VARCHAR(100),
     IN materialSP           VARCHAR(100),
@@ -6046,6 +6050,7 @@ BEGIN
     DECLARE existeIDModelo INT DEFAULT NULL;
     DECLARE IDmodelo INT DEFAULT NULL;
     DECLARE IDproducto INT;
+    DECLARE v_mensaje_error VARCHAR(500);
 
     -- Normalizar categorÃ­a
     SET nombre_categoriaSP = TRIM(nombre_categoriaSP);
@@ -6120,13 +6125,15 @@ BEGIN
 
     -- Validar formato del SKU después de normalización
     IF skuSP NOT REGEXP '^AUR-[0-9]{3}[A-Za-z]$' THEN
+        SET v_mensaje_error = CONCAT('Formato de SKU inválido. El formato debe ser: AUR-999X (8 caracteres). SKU recibido: "', skuSP, '" (', LENGTH(skuSP), ' caracteres). Ejemplos válidos: AUR-001A, AUR-123B, AUR-999Z');
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = CONCAT('Formato de SKU inválido. El formato debe ser: AUR-999X (8 caracteres). SKU recibido: "', skuSP, '" (', LENGTH(skuSP), ' caracteres). Ejemplos válidos: AUR-001A, AUR-123B, AUR-999Z');
+            SET MESSAGE_TEXT = v_mensaje_error;
     END IF;
 
     IF LENGTH(skuSP) <> 8 THEN
+        SET v_mensaje_error = CONCAT('El SKU debe tener exactamente 8 caracteres. SKU recibido: "', skuSP, '" tiene ', LENGTH(skuSP), ' caracteres. Formato requerido: AUR-999X');
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = CONCAT('El SKU debe tener exactamente 8 caracteres. SKU recibido: "', skuSP, '" tiene ', LENGTH(skuSP), ' caracteres. Formato requerido: AUR-999X');
+            SET MESSAGE_TEXT = v_mensaje_error;
     END IF;
 
     SELECT COUNT(*)
@@ -6231,6 +6238,4 @@ BEGIN
         VALUES (IDproducto, leySP);
     END IF;
 END$$
-
-
 
