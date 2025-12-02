@@ -2971,7 +2971,7 @@ CREATE OR REPLACE PROCEDURE productoAlta(
     IN descuento_productoSP DECIMAL(5,2),
     IN costo_unitarioSP     DECIMAL(10,2),
     IN tallaSP              VARCHAR(20),
-    IN kilatajeSP           INT,
+    IN kilatajeSP           VARCHAR(10),
     IN leySP                DECIMAL(10,2)
 )
 BEGIN
